@@ -39,7 +39,6 @@ class WabaController extends Controller
             'phone_number_id' => 'required|string|max:255',
             'whatsapp_business_account_id' => 'required|string|max:255',
             'meta_app_id' => 'required|string|max:255',
-            'verify_token' => 'nullable|string|max:255',
         ]);
 
         if ($validation->fails()) {
@@ -50,15 +49,6 @@ class WabaController extends Controller
         }
 
         $validated = $validation->validated();
-
-        // Enforce only one WABA setting per tenant user
-        $hasAccount = WhatsappAccount::where('user_id', $userId)->exists();
-        if ($hasAccount) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Only a single WhatsApp Business Account (WABA) setting can be added.'
-            ], 422);
-        }
 
         // Check for duplicates (phone_number_id) scoped to this user
         $exists = WhatsappAccount::where('user_id', $userId)
@@ -79,7 +69,7 @@ class WabaController extends Controller
             'phone_number_id' => $validated['phone_number_id'],
             'whatsapp_business_account_id' => $validated['whatsapp_business_account_id'],
             'meta_app_id' => $validated['meta_app_id'],
-            'verify_token' => $validated['verify_token'] ?? Str::random(32),
+            'verify_token' => $this->generateUniqueVerifyToken(),
             'status' => true
         ]);
 
@@ -104,7 +94,6 @@ class WabaController extends Controller
             'phone_number_id' => 'required|string|max:255',
             'whatsapp_business_account_id' => 'required|string|max:255',
             'meta_app_id' => 'required|string|max:255',
-            'verify_token' => 'nullable|string|max:255',
         ]);
 
         if ($validation->fails()) {
@@ -135,7 +124,6 @@ class WabaController extends Controller
             'phone_number_id' => $validated['phone_number_id'],
             'whatsapp_business_account_id' => $validated['whatsapp_business_account_id'],
             'meta_app_id' => $validated['meta_app_id'],
-            'verify_token' => $validated['verify_token'] ?? $waba->verify_token,
         ]);
 
         return response()->json([
@@ -343,5 +331,37 @@ class WabaController extends Controller
                 'payload_sent' => $payload
             ], 400);
         }
+    }
+
+    /**
+     * Regenerate the webhook verify token for a specific WABA.
+     */
+    public function regenerateVerifyToken($id): JsonResponse
+    {
+        $userId = Auth::id();
+        $waba = WhatsappAccount::where('user_id', $userId)->findOrFail($id);
+
+        $newToken = $this->generateUniqueVerifyToken();
+        $waba->verify_token = $newToken;
+        $waba->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Verify Token regenerated successfully!',
+            'verify_token' => $newToken,
+            'webhook_url' => url('/webhook/whatsapp/' . $newToken)
+        ]);
+    }
+
+    /**
+     * Generate a unique verification token.
+     */
+    protected function generateUniqueVerifyToken(): string
+    {
+        do {
+            $token = Str::random(32);
+        } while (WhatsappAccount::where('verify_token', $token)->exists());
+
+        return $token;
     }
 }

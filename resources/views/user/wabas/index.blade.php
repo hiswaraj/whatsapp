@@ -166,50 +166,17 @@
 
         <!-- Webhook Settings Info Box -->
         <div class="card mb-4 p-4 fade-in-element" style="background-color: var(--card-background); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm);">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-                <div class="d-flex align-items-start gap-3">
-                    <div style="background-color: rgba(37, 211, 102, 0.15); color: #25D366; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.1);">
-                        <i class="bi bi-link-45deg" style="font-size: 1.6rem;"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold mb-1" style="color: var(--text-primary); font-size: 1.05rem;">Meta Webhook Integration</h5>
-                        <p class="text-muted mb-0" style="font-size: 0.85rem; max-width: 580px;">
-                            Configure this unique webhook URL in your <strong>Meta Developer Console</strong> under WhatsApp > Configuration to enable real-time messaging, chatbot auto-responses, and message delivery status updates.
-                        </p>
-                    </div>
+            <div class="d-flex align-items-start gap-3">
+                <div style="background-color: rgba(37, 211, 102, 0.15); color: #25D366; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.1);">
+                    <i class="bi bi-link-45deg" style="font-size: 1.6rem;"></i>
                 </div>
-            </div>
-            
-            <div class="row mt-4 g-3">
-                <div class="col-lg-7">
-                    <div class="p-3 rounded" style="background-color: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color);">
-                        <label class="form-label fw-bold text-muted mb-1.5" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Callback URL</label>
-                        <div class="d-flex align-items-center gap-2">
-                            @if($wabas->isNotEmpty())
-                                <input type="text" class="form-control form-control-sm form-control-custom bg-transparent" value="{{ url('/webhook/whatsapp/' . $wabas->first()->verify_token) }}" readonly id="webhook-callback-url" style="font-family: var(--font-mono, monospace); font-size: 0.85rem; border-color: var(--border-color); color: var(--text-primary); flex-grow: 1;">
-                                <button class="btn btn-sm btn-outline-primary" type="button" onclick="copyToClipboard('{{ url('/webhook/whatsapp/' . $wabas->first()->verify_token) }}')" style="border-color: var(--border-color); color: var(--primary-color); white-space: nowrap;">
-                                    <i class="bi bi-clipboard"></i> Copy URL
-                                </button>
-                            @else
-                                <input type="text" class="form-control form-control-sm form-control-custom bg-transparent" value="{{ url('/webhook/whatsapp/{verify_token}') }}" readonly id="webhook-callback-url" style="font-family: var(--font-mono, monospace); font-size: 0.85rem; border-color: var(--border-color); color: var(--text-muted); flex-grow: 1;" disabled>
-                                <button class="btn btn-sm btn-outline-secondary" type="button" disabled style="white-space: nowrap;">
-                                    <i class="bi bi-clipboard"></i> Copy URL
-                                </button>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-5">
-                    <div class="p-3 rounded h-100" style="background-color: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center;">
-                        <label class="form-label fw-bold text-muted mb-1.5" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Verify Token</label>
-                        <p class="text-muted mb-0" style="font-size: 0.82rem;">
-                            @if($wabas->isNotEmpty())
-                                Use the Verify Token of your WABA account: <code>{{ $wabas->first()->verify_token }}</code>
-                            @else
-                                Use the Verify Token you set when adding your WABA account.
-                            @endif
-                        </p>
-                    </div>
+                <div>
+                    <h5 class="fw-bold mb-1" style="color: var(--text-primary); font-size: 1.05rem;">Meta Webhook Integration</h5>
+                    <p class="text-muted mb-0" style="font-size: 0.88rem; line-height: 1.5; max-width: 750px;">
+                        To enable real-time messaging, chatbot auto-responses, and message status updates, you must configure webhook details.
+                        <strong>Each WhatsApp Business Account (WABA) below has its own unique Callback URL and Verify Token</strong>.
+                        Please copy the credentials directly from the respective card below and configure them in your <strong>Meta Developer Console</strong>.
+                    </p>
                 </div>
             </div>
         </div>
@@ -271,19 +238,27 @@
                                 <div class="waba-detail-value">{{ $waba->meta_app_id }}</div>
 
                                 <div class="waba-detail-label">Webhook Callback URL</div>
-                                <div class="waba-detail-value">
-                                    <span style="font-size: 0.8rem; word-break: break-all;">{{ url('/webhook/whatsapp/' . $waba->verify_token) }}</span>
-                                    <button class="copy-btn" onclick="copyToClipboard('{{ url('/webhook/whatsapp/' . $waba->verify_token) }}')" title="Copy Webhook Callback URL">
-                                        <i class="bi bi-clipboard"></i>
-                                    </button>
+                                <div class="waba-detail-value mb-2">
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control form-control-sm bg-transparent border-secondary-subtle text-muted" value="{{ url('/webhook/whatsapp/' . $waba->verify_token) }}" id="waba-webhook-url-text-{{ $waba->id }}" readonly style="font-size: 0.75rem; font-family: monospace;">
+                                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="copyToClipboard($('#waba-webhook-url-text-{{ $waba->id }}').val())">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="waba-detail-label">Verify Token</div>
-                                <div class="waba-detail-value">
-                                    <span>{{ $waba->verify_token }}</span>
-                                    <button class="copy-btn" onclick="copyToClipboard('{{ $waba->verify_token }}')" title="Copy Verify Token">
-                                        <i class="bi bi-clipboard"></i>
-                                    </button>
+                                <div class="waba-detail-value d-flex align-items-center justify-content-between gap-2">
+                                    <span id="waba-verify-token-text-{{ $waba->id }}" class="font-monospace" style="font-size: 0.85rem; font-family: monospace; word-break: break-all; color: var(--text-primary);">{{ $waba->verify_token }}</span>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <button class="btn btn-xs btn-link p-0 text-decoration-none" onclick="copyToClipboard($('#waba-verify-token-text-{{ $waba->id }}').text())" title="Copy Verify Token" style="font-size: 0.8rem; color: var(--primary-color);">
+                                            <i class="bi bi-clipboard"></i> Copy
+                                        </button>
+                                        <span class="text-muted" style="font-size: 0.8rem;">|</span>
+                                        <button class="btn btn-xs btn-link p-0 text-decoration-none regenerate-token-btn" data-id="{{ $waba->id }}" title="Regenerate Verify Token" style="font-size: 0.8rem; color: var(--warning-color);">
+                                            <i class="bi bi-arrow-repeat"></i> Regenerate
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -306,7 +281,6 @@
                                         data-phoneid="{{ $waba->phone_number_id }}"
                                         data-wabaid="{{ $waba->whatsapp_business_account_id }}"
                                         data-appid="{{ $waba->meta_app_id }}"
-                                        data-verify="{{ $waba->verify_token }}"
                                         title="Edit WABA Settings">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -362,11 +336,6 @@
                         <label for="meta_app_id" class="form-label fw-semibold">Meta App ID</label>
                         <input type="text" name="meta_app_id" class="form-control form-control-custom" placeholder="4738291029..." required>
                     </div>
-                    <div class="mb-3">
-                        <label for="verify_token" class="form-label fw-semibold">Webhook Verify Token (Optional)</label>
-                        <input type="text" name="verify_token" class="form-control form-control-custom" placeholder="e.g. custom_verify_token_here">
-                        <div class="form-text">If left empty, a secure verification token will be generated automatically.</div>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: var(--border-radius-md);">Cancel</button>
@@ -409,10 +378,6 @@
                     <div class="mb-3">
                         <label for="edit-appid" class="form-label fw-semibold">Meta App ID</label>
                         <input type="text" name="meta_app_id" id="edit-appid" class="form-control form-control-custom" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit-verify" class="form-label fw-semibold">Webhook Verify Token</label>
-                        <input type="text" name="verify_token" id="edit-verify" class="form-control form-control-custom" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -536,7 +501,6 @@
             const phoneid = $(this).data('phoneid');
             const wabaid = $(this).data('wabaid');
             const appid = $(this).data('appid');
-            const verify = $(this).data('verify');
 
             $('#edit-waba-id').val(id);
             $('#edit-name').val(name);
@@ -544,7 +508,6 @@
             $('#edit-phoneid').val(phoneid);
             $('#edit-wabaid').val(wabaid);
             $('#edit-appid').val(appid);
-            $('#edit-verify').val(verify);
 
             $('#editWabaModal').modal('show');
         });
@@ -575,6 +538,50 @@
                         msg = xhr.responseJSON.message;
                     }
                     Notiflix.Notify.failure(msg);
+                }
+            });
+        });
+
+        // Regenerate Verify Token
+        $(document).on('click', '.regenerate-token-btn', function() {
+            const id = $(this).data('id');
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Regenerating the Webhook Verify Token will invalidate the old webhook URL. You must update the URL and token in Meta Developer Console immediately to prevent disruption.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--primary-color)',
+                cancelButtonColor: 'var(--secondary-color)',
+                confirmButtonText: 'Yes, regenerate token',
+                background: 'var(--card-background)',
+                color: 'var(--text-primary)'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Notiflix.Loading.circle('Regenerating verify token...');
+                    $.ajax({
+                        url: `/wabas/${id}/regenerate-token`,
+                        type: "POST",
+                        data: {
+                            _token: "{{ csrf_token() }}"
+                        },
+                        dataType: "json",
+                        success: function(response) {
+                            Notiflix.Loading.remove();
+                            if (response.status) {
+                                Notiflix.Notify.success(response.message);
+                                window.location.reload();
+                            }
+                        },
+                        error: function(xhr) {
+                            Notiflix.Loading.remove();
+                            let msg = 'Failed to regenerate token.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            }
+                            Notiflix.Notify.failure(msg);
+                        }
+                    });
                 }
             });
         });

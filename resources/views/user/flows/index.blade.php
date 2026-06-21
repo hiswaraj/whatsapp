@@ -132,6 +132,36 @@
             </div>
         </header>
 
+        @if($wabas->isEmpty())
+            <!-- WABA Empty state alert -->
+            <div class="alert alert-warning py-3 px-4 rounded-3 border-0 d-flex gap-3 align-items-center fade-in-element mb-4">
+                <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+                <div>
+                    <h6 class="fw-bold mb-1">No Active WABA Registered</h6>
+                    <p class="mb-0" style="font-size: 0.88rem;">To manage chatbot flows, you must first register and connect a WhatsApp Business Account (WABA) in the <a href="{{ route('wabas.index') }}" class="fw-semibold text-decoration-underline" style="color: inherit;">WABAs module</a>.</p>
+                </div>
+            </div>
+        @endif
+
+        <!-- Filter bar -->
+        <section class="card p-3 border mb-4 fade-in-element" style="border-radius: var(--border-radius-md); background-color: var(--card-background); border-color: var(--border-color) !important;">
+            <form method="GET" action="{{ route('flows.index') }}" id="filter-form">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted fw-semibold small">Filter by WhatsApp Account</label>
+                        <select name="waba_id" class="form-select form-control-custom py-2" onchange="this.form.submit()">
+                            <option value="">All Accounts</option>
+                            @foreach($wabas as $waba)
+                                <option value="{{ $waba->id }}" {{ request('waba_id') == $waba->id ? 'selected' : '' }}>
+                                    {{ $waba->display_name }} ({{ substr($waba->phone_number_id, -6) }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </section>
+
         <!-- Flows Grid -->
         @if($flows->isEmpty())
             <div class="card p-5 text-center fade-in-element" style="border-radius: var(--border-radius-md); background-color: var(--card-background); border-color: var(--border-color) !important;">
@@ -157,6 +187,19 @@
                                 <div class="form-check form-switch">
                                     <input class="form-check-input toggle-flow-active" type="checkbox" data-id="{{ $flow->id }}" {{ $flow->is_active ? 'checked' : '' }} style="cursor: pointer;">
                                 </div>
+                            </div>
+
+                            <!-- WABA Account -->
+                            <div class="mb-3">
+                                <span class="d-block text-muted small fw-semibold mb-1" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">WhatsApp Account:</span>
+                                @if($flow->whatsappAccount)
+                                    <div class="d-flex align-items-center gap-1.5 small text-primary fw-semibold" style="font-size: 0.85rem; color: var(--primary-color);">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span>{{ $flow->whatsappAccount->display_name }}</span>
+                                    </div>
+                                @else
+                                    <span class="text-muted small italic">Not connected</span>
+                                @endif
                             </div>
 
                             <!-- Keywords -->

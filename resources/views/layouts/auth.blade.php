@@ -54,6 +54,7 @@
         // Load saved theme
         const savedTheme = localStorage.getItem('theme') || 'light';
         root.setAttribute('data-theme', savedTheme);
+        root.setAttribute('data-bs-theme', savedTheme);
         
         // Wait for page to render and sync icon states
         $(document).ready(function() {
@@ -192,6 +193,7 @@
         $(document).on('click', '.theme-switch-btn', function() {
             const selectedTheme = $(this).data('theme-val');
             root.setAttribute('data-theme', selectedTheme);
+            root.setAttribute('data-bs-theme', selectedTheme);
             localStorage.setItem('theme', selectedTheme);
             updateThemeSwitcherState(selectedTheme);
         });
@@ -200,6 +202,7 @@
             const currentTheme = root.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             root.setAttribute('data-theme', newTheme);
+            root.setAttribute('data-bs-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeSwitcherState(newTheme);
         });

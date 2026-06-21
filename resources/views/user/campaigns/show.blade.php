@@ -149,8 +149,8 @@
             <div class="col-lg-3 col-md-6 col-sm-12">
                 <div class="card p-3 border" style="border-radius: var(--border-radius-md); background-color: var(--card-background); border-color: var(--border-color) !important;">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="text-info" style="background-color: rgba(6, 182, 212, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                            <i class="bi bi-chat-left-check-fill"></i>
+                        <div class="text-info" style="background-color: rgba(6, 182, 212, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.45rem;">
+                            <i class="bi bi-check-all"></i>
                         </div>
                         <div>
                             <h4 class="mb-0 fw-bold" id="kpi-delivered" style="color: var(--text-primary);">{{ $campaign->delivered_count }}</h4>
@@ -267,7 +267,7 @@
                                             @if($msg->status === 'read')
                                                 <span class="badge bg-success border border-success px-2 py-0.5" style="font-size: 0.75rem;"><i class="bi bi-eye-fill me-1"></i> Read</span>
                                             @elseif($msg->status === 'delivered')
-                                                <span class="badge bg-info border border-info px-2 py-0.5 text-dark" style="font-size: 0.75rem;"><i class="bi bi-chat-left-check-fill me-1"></i> Delivered</span>
+                                                <span class="badge bg-info border border-info px-2 py-0.5 text-dark" style="font-size: 0.75rem;"><i class="bi bi-check-all me-1"></i> Delivered</span>
                                             @elseif($msg->status === 'sent')
                                                 <span class="badge bg-primary border border-primary px-2 py-0.5" style="font-size: 0.75rem;"><i class="bi bi-check me-1"></i> Sent</span>
                                             @elseif($msg->status === 'failed')

@@ -48,6 +48,7 @@ Route::namespace('App\\Http\\Controllers')->group(function () {
         Route::post('/wabas/{id}/toggle-status', 'WabaController@toggleStatus')->name('wabas.toggle-status');
         Route::post('/wabas/{id}/verify', 'WabaController@verifyConnection')->name('wabas.verify');
         Route::post('/wabas/{id}/test-message', 'WabaController@testMessage')->name('wabas.test-message');
+        Route::post('/wabas/{id}/regenerate-token', 'WabaController@regenerateVerifyToken')->name('wabas.regenerate-token');
 
         // Templates
         Route::get('/templates', 'TemplateController@index')->name('templates.index');

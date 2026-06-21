@@ -14,14 +14,19 @@ class FlowController extends Controller
     /**
      * Display listing of flows.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $userId = Auth::id();
-        $flows = Flow::where('user_id', $userId)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $wabas = \App\Models\WhatsappAccount::where('user_id', $userId)->get();
 
-        return view('user.flows.index', compact('flows'));
+        $query = Flow::where('user_id', $userId)->with('whatsappAccount');
+        if ($request->filled('waba_id')) {
+            $query->where('whatsapp_account_id', $request->query('waba_id'));
+        }
+
+        $flows = $query->orderBy('created_at', 'desc')->get();
+
+        return view('user.flows.index', compact('flows', 'wabas'));
     }
 
     /**
@@ -29,7 +34,9 @@ class FlowController extends Controller
      */
     public function create(): View
     {
-        return view('user.flows.builder');
+        $userId = Auth::id();
+        $wabas = \App\Models\WhatsappAccount::where('user_id', $userId)->where('status', true)->get();
+        return view('user.flows.builder', compact('wabas'));
     }
 
     /**
@@ -40,6 +47,7 @@ class FlowController extends Controller
         $userId = Auth::id();
 
         $validation = Validator::make($request->all(), [
+            'whatsapp_account_id' => 'required|exists:whatsapp_accounts,id,user_id,' . $userId,
             'name' => 'required|string|max:255',
             'trigger_keywords' => 'required|array|min:1',
             'trigger_keywords.*' => 'required|string|max:50',
@@ -58,6 +66,7 @@ class FlowController extends Controller
 
         Flow::create([
             'user_id' => $userId,
+            'whatsapp_account_id' => $validated['whatsapp_account_id'],
             'name' => $validated['name'],
             'trigger_keywords' => $validated['trigger_keywords'],
             'canvas_data' => $validated['canvas_data'],
@@ -79,8 +88,9 @@ class FlowController extends Controller
     {
         $userId = Auth::id();
         $flow = Flow::where('user_id', $userId)->findOrFail($id);
+        $wabas = \App\Models\WhatsappAccount::where('user_id', $userId)->where('status', true)->get();
 
-        return view('user.flows.builder', compact('flow'));
+        return view('user.flows.builder', compact('flow', 'wabas'));
     }
 
     /**
@@ -92,6 +102,7 @@ class FlowController extends Controller
         $flow = Flow::where('user_id', $userId)->findOrFail($id);
 
         $validation = Validator::make($request->all(), [
+            'whatsapp_account_id' => 'required|exists:whatsapp_accounts,id,user_id,' . $userId,
             'name' => 'required|string|max:255',
             'trigger_keywords' => 'required|array|min:1',
             'trigger_keywords.*' => 'required|string|max:50',
@@ -109,6 +120,7 @@ class FlowController extends Controller
         $validated = $validation->validated();
 
         $flow->update([
+            'whatsapp_account_id' => $validated['whatsapp_account_id'],
             'name' => $validated['name'],
             'trigger_keywords' => $validated['trigger_keywords'],
             'canvas_data' => $validated['canvas_data'],

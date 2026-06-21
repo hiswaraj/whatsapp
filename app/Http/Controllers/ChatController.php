@@ -47,14 +47,18 @@ class ChatController extends Controller
     /**
      * Retrieve a list of conversations for the authenticated user.
      */
-    public function conversations(): JsonResponse
+    public function conversations(Request $request): JsonResponse
     {
         $userId = Auth::id();
 
-        $conversations = Conversation::where('user_id', $userId)
-            ->with(['contact', 'whatsappAccount'])
-            ->orderBy('last_message_at', 'desc')
-            ->get();
+        $query = Conversation::where('user_id', $userId)
+            ->with(['contact', 'whatsappAccount']);
+
+        if ($request->filled('waba_id')) {
+            $query->where('whatsapp_account_id', $request->query('waba_id'));
+        }
+
+        $conversations = $query->orderBy('last_message_at', 'desc')->get();
 
         // Eager load the last message for each conversation
         $conversations->each(function ($conv) {

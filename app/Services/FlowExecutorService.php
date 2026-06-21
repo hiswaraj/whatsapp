@@ -40,7 +40,10 @@ class FlowExecutorService
         }
 
         // If no active flow session, match trigger keywords
-        $flows = Flow::where('user_id', $userId)->where('is_active', true)->get();
+        $flows = Flow::where('user_id', $userId)
+            ->where('whatsapp_account_id', $conversation->whatsapp_account_id)
+            ->where('is_active', true)
+            ->get();
         foreach ($flows as $flow) {
             $keywords = $flow->trigger_keywords ?? [];
             foreach ($keywords as $kw) {

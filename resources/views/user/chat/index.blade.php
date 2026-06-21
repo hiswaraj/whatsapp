@@ -607,14 +607,24 @@
             
             <!-- Sidebar: Threads List -->
             <div class="chat-threads-sidebar">
-                <div class="chat-search-wrapper d-flex gap-2">
-                    <div class="input-group input-group-custom flex-grow-1">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" id="contact-search" class="form-control form-control-custom form-control-sm py-2" placeholder="Search chats...">
+                <div class="chat-search-wrapper">
+                    <div class="mb-2">
+                        <select id="waba-chat-filter" class="form-select form-control-custom py-1.5" style="font-size: 0.8rem; background-color: var(--background-color);">
+                            <option value="">All WABA Accounts</option>
+                            @foreach($wabas as $wb)
+                                <option value="{{ $wb->id }}">{{ $wb->display_name }} ({{ substr($wb->phone_number_id, -6) }})</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <button class="btn btn-sm btn-primary-custom d-flex align-items-center justify-content-center" id="new-chat-btn" title="Start New Chat" style="width: 38px; height: 38px; border-radius: var(--border-radius-md); padding: 0; flex-shrink: 0;">
-                        <i class="bi bi-plus-lg text-white" style="font-size: 1.2rem; color: #ffffff !important;"></i>
-                    </button>
+                    <div class="d-flex gap-2">
+                        <div class="input-group input-group-custom flex-grow-1">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" id="contact-search" class="form-control form-control-custom form-control-sm py-2" placeholder="Search chats...">
+                        </div>
+                        <button class="btn btn-sm btn-primary-custom d-flex align-items-center justify-content-center" id="new-chat-btn" title="Start New Chat" style="width: 38px; height: 38px; border-radius: var(--border-radius-md); padding: 0; flex-shrink: 0;">
+                            <i class="bi bi-plus-lg text-white" style="font-size: 1.2rem; color: #ffffff !important;"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <ul class="chat-threads-list" id="threads-container">
@@ -860,9 +870,13 @@
 
         // Fetch conversation list and update sidebar UI
         function fetchConversations(isFirstLoad = false) {
+            const wabaId = $('#waba-chat-filter').val() || '';
             $.ajax({
                 url: "{{ route('chat.conversations') }}",
                 type: "GET",
+                data: {
+                    waba_id: wabaId
+                },
                 dataType: "json",
                 success: function(response) {
                     if (response.status) {
@@ -944,6 +958,11 @@
         // Search conversations listener
         $('#contact-search').on('keyup input', function() {
             renderConversationsList();
+        });
+
+        // WABA filter change listener
+        $('#waba-chat-filter').on('change', function() {
+            fetchConversations();
         });
 
         // Click Conversation Thread

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 
 #[Fillable([
     'user_id',
+    'whatsapp_account_id',
     'name',
     'trigger_keywords',
     'is_active',
@@ -35,5 +36,13 @@ class Flow extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the WhatsApp account associated with this flow.
+     */
+    public function whatsappAccount()
+    {
+        return $this->belongsTo(WhatsappAccount::class, 'whatsapp_account_id');
     }
 }

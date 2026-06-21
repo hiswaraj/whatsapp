@@ -143,6 +143,31 @@
         background-color: var(--input-focus-shadow);
         border-color: var(--primary-color);
     }
+
+    /* Visual node validation highlights & sidebar animations */
+    .drawflow .drawflow-node.error-node {
+        border-color: var(--danger-color) !important;
+        box-shadow: 0 0 12px rgba(220, 53, 69, 0.4) !important;
+        animation: pulseDanger 1.8s infinite;
+    }
+    @keyframes pulseDanger {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); }
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    .settings-fade-in {
+        animation: slideInRight 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
 </style>
 @endsection
 
@@ -255,11 +280,22 @@
                 <!-- Meta Config Details Card -->
                 <div class="card border p-3 mb-3" style="border-radius: var(--border-radius-md); background-color: var(--card-background); border-color: var(--border-color) !important;">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label for="whatsapp_account_id" class="form-label fw-bold small text-muted">WhatsApp Account</label>
+                            <select id="whatsapp_account_id" class="form-select form-control-custom" required>
+                                <option value="" disabled {{ !isset($flow) ? 'selected' : '' }}>Select WhatsApp Account</option>
+                                @foreach($wabas as $waba)
+                                    <option value="{{ $waba->id }}" {{ (isset($flow) && $flow->whatsapp_account_id == $waba->id) ? 'selected' : '' }}>
+                                        {{ $waba->display_name }} ({{ substr($waba->phone_number_id, -6) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label for="flow_name" class="form-label fw-bold small text-muted">Flow Campaign Name</label>
                             <input type="text" id="flow_name" class="form-control form-control-custom" placeholder="e.g. Greeting Auto-Response Flow" value="{{ $flow->name ?? '' }}" required>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="trigger_keywords" class="form-label fw-bold small text-muted">Trigger Keywords (comma separated)</label>
                             <input type="text" id="trigger_keywords" class="form-control form-control-custom" placeholder="hi, hello, help, menu" value="{{ isset($flow) ? implode(', ', $flow->trigger_keywords) : '' }}" required>
                         </div>
@@ -352,6 +388,14 @@
             createDefaultTriggerNode();
         @endif
 
+        // Sync trigger node text on load
+        setTimeout(syncTriggerNodeText, 100);
+
+        // Sync trigger node text on input
+        $('#trigger_keywords').on('input', function() {
+            syncTriggerNodeText();
+        });
+
         // Sidebar toggle
         $('#sidebar-toggle').on('click', function() {
             $('#dashboard-sidebar').toggleClass('show');
@@ -388,6 +432,20 @@
             saveFlowToServer();
         });
     });
+
+    function syncTriggerNodeText() {
+        const topKeywords = $('#trigger_keywords').val().trim();
+        const textPreview = topKeywords ? `Trigger: ${topKeywords}` : 'Matches defined keywords';
+        const exportData = editor.export();
+        if (exportData && exportData.drawflow && exportData.drawflow.Home) {
+            const drawflowData = exportData.drawflow.Home.data;
+            Object.keys(drawflowData).forEach(nodeId => {
+                if (drawflowData[nodeId].name === 'trigger') {
+                    $(`#node-${nodeId} .content-box`).text(textPreview);
+                }
+            });
+        }
+    }
 
     // Node templates
     function createDefaultTriggerNode() {
@@ -437,6 +495,19 @@
         let nodeHtml = '';
 
         if (type === 'trigger') {
+            const drawflowData = editor.export().drawflow.Home.data;
+            let triggerExists = false;
+            Object.keys(drawflowData).forEach(nodeId => {
+                if (drawflowData[nodeId].name === 'trigger') {
+                    triggerExists = true;
+                }
+            });
+
+            if (triggerExists) {
+                Notiflix.Notify.warning("Only one Start Trigger node is allowed per flow plan.");
+                return;
+            }
+
             nodeName = 'trigger';
             numInputs = 0;
             numOutputs = 1;
@@ -498,7 +569,7 @@
     // Node configuration panel handlers
     function showNodeSettings(id, node) {
         $('#node-settings-empty').addClass('d-none');
-        $('#node-settings-form').removeClass('d-none');
+        $('#node-settings-form').removeClass('d-none').addClass('settings-fade-in');
         $('#selected-node-id').val(id);
 
         const container = $('#dynamic-node-settings');
@@ -508,16 +579,24 @@
         const data = node.data;
 
         if (type === 'trigger') {
+            const currentKeywords = $('#trigger_keywords').val().trim() || '(None set)';
             const html = `
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Keywords for Trigger</label>
-                    <input type="text" id="node-trigger-keywords" class="form-control form-control-sm form-control-custom" placeholder="e.g. hi, hello" value="${data.keywords || ''}">
-                    <small class="text-muted small mt-1 d-block">These local triggers will override general trigger keywords for this specific flow.</small>
+                    <label class="form-label fw-bold small text-muted">Trigger Keywords</label>
+                    <div class="p-3 rounded border mb-3" style="background-color: var(--background-color); border-color: var(--border-color) !important; line-height: 1.5;">
+                        <span class="d-block mb-1 text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.5px;">Current Triggers:</span>
+                        <span class="text-primary fw-bold" style="font-size: 0.95rem; color: var(--primary-color) !important;">${currentKeywords}</span>
+                    </div>
+                    <div class="p-2.5 rounded border small text-muted" style="line-height: 1.4; border-color: var(--border-color) !important; background-color: rgba(79, 70, 229, 0.05);">
+                        <i class="bi bi-info-circle-fill text-primary me-1"></i> Note: Keywords are managed using the <strong>Trigger Keywords</strong> field in the top configuration card. No separate configuration is needed here.
+                    </div>
                 </div>
             `;
             container.append(html);
+            $('#apply-settings-btn').addClass('d-none');
         }
         else if (type === 'send_message') {
+            $('#apply-settings-btn').removeClass('d-none');
             const html = `
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted">Auto-Response Message Text</label>
@@ -584,9 +663,10 @@
     }
 
     function hideNodeSettings() {
-        $('#node-settings-form').addClass('d-none');
+        $('#node-settings-form').addClass('d-none').removeClass('settings-fade-in');
         $('#node-settings-empty').removeClass('d-none');
         $('#selected-node-id').val('');
+        $('#apply-settings-btn').removeClass('d-none');
     }
 
     function applyNodeSettings() {
@@ -598,12 +678,9 @@
         const data = {};
 
         if (type === 'trigger') {
-            data.keywords = $('#node-trigger-keywords').val();
-            
-            // Update visual text
-            const textPreview = data.keywords ? `Trigger: ${data.keywords}` : 'Matches defined keywords';
-            editor.updateNodeDataFromId(id, data);
-            
+            // Keywords are managed via the top form. Just update description on canvas
+            const topKeywords = $('#trigger_keywords').val().trim();
+            const textPreview = topKeywords ? `Trigger: ${topKeywords}` : 'Matches defined keywords';
             $(`#node-${id} .content-box`).text(textPreview);
         }
         else if (type === 'send_message') {
@@ -649,8 +726,14 @@
 
     // Save Flow JSON state
     function saveFlowToServer() {
+        const wabaId = $('#whatsapp_account_id').val();
         const flowName = $('#flow_name').val().trim();
         const triggerRaw = $('#trigger_keywords').val().trim();
+
+        if (!wabaId) {
+            Notiflix.Notify.failure('Please select a WhatsApp Account.');
+            return;
+        }
 
         if (!flowName) {
             Notiflix.Notify.failure('Please enter a Flow Name.');
@@ -683,6 +766,7 @@
             type: method,
             data: {
                 _token: "{{ csrf_token() }}",
+                whatsapp_account_id: wabaId,
                 name: flowName,
                 trigger_keywords: keywords,
                 canvas_data: canvasJson,
@@ -712,6 +796,9 @@
 
     // Compile Drawflow nodes to backend execution graph
     function compileFlow() {
+        // Clear previous validation highlights
+        $('.drawflow-node').removeClass('error-node');
+
         const exportData = editor.export();
         const drawflowData = exportData.drawflow.Home.data;
 
@@ -731,8 +818,11 @@
             return null;
         }
 
-        // Process all nodes
-        Object.keys(drawflowData).forEach(nodeId => {
+        let compilationFailed = false;
+        const allNodeIds = Object.keys(drawflowData);
+
+        for (let i = 0; i < allNodeIds.length; i++) {
+            const nodeId = allNodeIds[i];
             const rawNode = drawflowData[nodeId];
             const nodeType = rawNode.name;
             const nodeData = rawNode.data;
@@ -743,34 +833,89 @@
             };
 
             if (nodeType === 'trigger') {
-                compiledNode.keywords = nodeData.keywords ? nodeData.keywords.split(',').map(k => k.trim()) : [];
                 // Link trigger output 1 connection
                 const conn = rawNode.outputs.output_1?.connections[0];
                 compiledNode.next_node_id = conn ? conn.node : null;
+                
+                if (!compiledNode.next_node_id) {
+                    Notiflix.Notify.failure("Visual validation error: Please connect your 'Start Trigger' node to a response node.");
+                    $(`#node-${nodeId}`).addClass('error-node');
+                    compilationFailed = true;
+                    break;
+                }
             }
             else if (nodeType === 'send_message') {
-                compiledNode.message = nodeData.message || '';
+                compiledNode.message = (nodeData.message || '').trim();
+                
+                if (!compiledNode.message || compiledNode.message === 'Type response message...') {
+                    Notiflix.Notify.failure("Visual validation error: Please enter a response message for all 'Send Message' nodes.");
+                    $(`#node-${nodeId}`).addClass('error-node');
+                    compilationFailed = true;
+                    break;
+                }
+
                 const conn = rawNode.outputs.output_1?.connections[0];
                 compiledNode.next_node_id = conn ? conn.node : null;
             }
             else if (nodeType === 'menu') {
-                compiledNode.message = nodeData.message || '';
-                compiledNode.options = {};
+                compiledNode.message = (nodeData.message || '').trim();
                 
+                if (!compiledNode.message || compiledNode.message === 'Please choose an option:') {
+                    Notiflix.Notify.failure("Visual validation error: Please enter the question body inside all 'Options Menu' nodes.");
+                    $(`#node-${nodeId}`).addClass('error-node');
+                    compilationFailed = true;
+                    break;
+                }
+
+                compiledNode.options = {};
                 const optionsList = nodeData.options || [];
-                optionsList.forEach((opt, idx) => {
-                    const portName = `output_${idx + 1}`;
+
+                if (optionsList.length === 0) {
+                    Notiflix.Notify.failure("Visual validation error: 'Options Menu' nodes must have at least one branching choice configured.");
+                    $(`#node-${nodeId}`).addClass('error-node');
+                    compilationFailed = true;
+                    break;
+                }
+
+                let menuValid = true;
+                for (let oIdx = 0; oIdx < optionsList.length; oIdx++) {
+                    const opt = optionsList[oIdx];
+                    if (!opt.text || !opt.text.trim()) {
+                        Notiflix.Notify.failure(`Visual validation error: Option #${oIdx + 1} inside Options Menu node has no text configured.`);
+                        $(`#node-${nodeId}`).addClass('error-node');
+                        menuValid = false;
+                        break;
+                    }
+
+                    const portName = `output_${oIdx + 1}`;
                     const conn = rawNode.outputs[portName]?.connections[0];
-                    
-                    compiledNode.options[idx + 1] = {
+                    const nextId = conn ? conn.node : null;
+
+                    if (!nextId) {
+                        Notiflix.Notify.failure(`Visual validation error: Option "${opt.text}" inside Options Menu node must connect to another node.`);
+                        $(`#node-${nodeId}`).addClass('error-node');
+                        menuValid = false;
+                        break;
+                    }
+
+                    compiledNode.options[oIdx + 1] = {
                         text: opt.text,
-                        next_node_id: conn ? conn.node : null
+                        next_node_id: nextId
                     };
-                });
+                }
+
+                if (!menuValid) {
+                    compilationFailed = true;
+                    break;
+                }
             }
 
             nodes[nodeId] = compiledNode;
-        });
+        }
+
+        if (compilationFailed) {
+            return null;
+        }
 
         return {
             start_node_id: startNodeId,
