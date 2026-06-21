@@ -1,0 +1,49 @@
+:root {
+  /* Premium Dark/Light Harmonious Palette */
+  --primary-color: #4f46e5;      /* Slate Blue/Indigo */
+  --primary-hover: #4338ca;
+  --secondary-color: #64748b;    /* Slate Gray */
+  --success-color: #10b981;      /* Emerald Green */
+  --danger-color: #ef4444;       /* Coral Red */
+  --warning-color: #f59e0b;      /* Amber */
+  
+  /* Backgrounds & Text */
+  --background-color: #f8fafc;
+  --card-background: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  /* Borders & Inputs */
+  --border-color: #e2e8f0;
+  --input-focus-border: #818cf8;
+  --input-focus-shadow: rgba(99, 102, 241, 0.15);
+  
+  /* Dimensions & Spacing */
+  --border-radius-sm: 6px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 20px;
+  --border-radius-pill: 9999px;
+  
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+  --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  /* Transitions */
+  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Mode Theme overrides */
+[data-theme="dark"] {
+  --background-color: #0b0f19;
+  --card-background: #111827;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --border-color: #1f2937;
+  --input-focus-border: #6366f1;
+  --input-focus-shadow: rgba(99, 102, 241, 0.3);
+}

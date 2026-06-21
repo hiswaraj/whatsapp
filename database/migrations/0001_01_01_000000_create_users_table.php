@@ -16,6 +16,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('company')->nullable();
+            $table->string('user_type')->default('publisher'); // admin, advertiser, publisher
+            $table->integer('status')->default(0); // 0 = pending, 1 = active, etc.
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
