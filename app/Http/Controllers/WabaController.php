@@ -354,6 +354,156 @@ class WabaController extends Controller
     }
 
     /**
+     * Sync/Fetch DP from Meta.
+     */
+    public function syncDp($id): JsonResponse
+    {
+        $userId = Auth::id();
+        $waba = WhatsappAccount::where('user_id', $userId)->findOrFail($id);
+
+        $token = $waba->meta_access_token;
+        $isMock = str_starts_with($token, 'mock_');
+
+        $destinationPath = public_path('uploads/waba_dps');
+        if (!\Illuminate\Support\Facades\File::exists($destinationPath)) {
+            \Illuminate\Support\Facades\File::makeDirectory($destinationPath, 0755, true);
+        }
+
+        if ($isMock) {
+            // Simulated/Mock DP URL
+            $mockUrls = [
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+                "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
+            ];
+            // Pick one mock URL based on ID
+            $selectedUrl = $mockUrls[$waba->id % count($mockUrls)];
+            
+            try {
+                $imageContent = file_get_contents($selectedUrl);
+                if ($imageContent) {
+                    $filename = "waba_dp_{$waba->id}.jpg";
+                    \Illuminate\Support\Facades\File::put($destinationPath . '/' . $filename, $imageContent);
+                    $waba->profile_picture_url = 'uploads/waba_dps/' . $filename;
+                    $waba->save();
+
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Mock profile picture fetched successfully!',
+                        'profile_picture_url' => asset($waba->profile_picture_url)
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Fallback if network request fails
+            }
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve mock profile picture.'
+            ], 400);
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->timeout(5)
+                ->get("https://graph.facebook.com/v19.0/{$waba->phone_number_id}/whatsapp_business_profile?fields=profile_picture_url");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                // Meta response profile_picture_url is typically nested in the first element of data
+                $profilePictureUrl = null;
+                if (isset($data['data'][0]['profile_picture_url'])) {
+                    $profilePictureUrl = $data['data'][0]['profile_picture_url'];
+                }
+
+                if ($profilePictureUrl) {
+                    // Download the image content
+                    $imgResponse = Http::timeout(10)->get($profilePictureUrl);
+                    if ($imgResponse->successful()) {
+                        $imageContent = $imgResponse->body();
+                        $filename = "waba_dp_{$waba->id}.jpg";
+                        \Illuminate\Support\Facades\File::put($destinationPath . '/' . $filename, $imageContent);
+                        
+                        $waba->profile_picture_url = 'uploads/waba_dps/' . $filename;
+                        $waba->save();
+
+                        return response()->json([
+                            'status' => true,
+                            'message' => 'Profile picture synced from Meta successfully!',
+                            'profile_picture_url' => asset($waba->profile_picture_url)
+                        ]);
+                    }
+                }
+                
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This account does not have a profile picture set on WhatsApp Business.'
+                ], 400);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Failed to fetch from Meta API: ' . ($response->json('error.message') ?? 'Unknown API error.')
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Sync failed: Connection to Meta API failed: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Upload custom DP from computer.
+     */
+    public function uploadDp(Request $request, $id): JsonResponse
+    {
+        $userId = Auth::id();
+        $waba = WhatsappAccount::where('user_id', $userId)->findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|image|mimes:jpeg,jpg,png,webp|max:2048'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
+        $filename = "waba_dp_{$waba->id}." . $extension;
+
+        $destinationPath = public_path('uploads/waba_dps');
+        if (!\Illuminate\Support\Facades\File::exists($destinationPath)) {
+            \Illuminate\Support\Facades\File::makeDirectory($destinationPath, 0755, true);
+        }
+
+        // Clean up old DP file if exists with different extensions
+        $existingFiles = glob($destinationPath . "/waba_dp_{$waba->id}.*");
+        foreach ($existingFiles as $ef) {
+            if (file_exists($ef)) {
+                @unlink($ef);
+            }
+        }
+
+        // Move the new file
+        $file->move($destinationPath, $filename);
+        
+        $waba->profile_picture_url = 'uploads/waba_dps/' . $filename;
+        $waba->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Profile picture uploaded successfully!',
+            'profile_picture_url' => asset($waba->profile_picture_url)
+        ]);
+    }
+
+    /**
      * Generate a unique verification token.
      */
     protected function generateUniqueVerifyToken(): string

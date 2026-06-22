@@ -92,6 +92,7 @@
         font-size: 1rem;
         flex-shrink: 0;
         box-shadow: var(--shadow-sm);
+        overflow: hidden;
     }
     
     .chat-thread-info {
@@ -956,10 +957,16 @@
                 }
 
                 const initials = conv.contact.name.substring(0, 1).toUpperCase();
+                let avatarHtml = '';
+                if (conv.contact.avatar_url) {
+                    avatarHtml = `<img src="${window.location.origin}/${conv.contact.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else {
+                    avatarHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(conv.contact.name)}&background=random&color=fff&size=128" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                }
 
                 const html = `
                     <li class="chat-thread-item ${isActive}" data-id="${conv.id}">
-                        <div class="chat-avatar">${initials}</div>
+                        <div class="chat-avatar">${avatarHtml}</div>
                         <div class="chat-thread-info">
                             <div class="chat-thread-header">
                                 <h6 class="chat-thread-name text-truncate">${conv.contact.name}</h6>
@@ -1201,7 +1208,13 @@
                     if (response.status && activeConversationId === convId) {
                         // Populate active contact details
                         const initials = response.conversation.contact.name.substring(0, 1).toUpperCase();
-                        $('#active-chat-avatar').text(initials);
+                        let activeAvatarHtml = '';
+                        if (response.conversation.contact.avatar_url) {
+                            activeAvatarHtml = `<img src="${window.location.origin}/${response.conversation.contact.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                        } else {
+                            activeAvatarHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(response.conversation.contact.name)}&background=random&color=fff&size=128" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                        }
+                        $('#active-chat-avatar').html(activeAvatarHtml);
                         $('#active-chat-name').text(response.conversation.contact.name);
                         
                         const statusDetails = `Connected via: <strong>${response.conversation.whatsapp_account.display_name}</strong>`;

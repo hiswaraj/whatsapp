@@ -4,50 +4,229 @@
 
 @section('styles')
 <style>
+    /* Premium card design */
     .waba-card {
         background-color: var(--card-background);
         border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-md);
-        box-shadow: var(--shadow-sm);
-        transition: var(--transition-normal);
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
     }
+    
+    [data-theme="dark"] .waba-card {
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.25);
+    }
+    
     .waba-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-md);
-        border-color: var(--input-focus-border);
+        transform: translateY(-6px);
+        box-shadow: 0 12px 30px rgba(99, 102, 241, 0.08);
+        border-color: var(--primary-color);
     }
-    .waba-card::before {
-        content: '';
+    
+    [data-theme="dark"] .waba-card:hover {
+        box-shadow: 0 12px 30px rgba(99, 102, 241, 0.15);
+    }
+
+    /* Top Right Menu Group */
+    .card-actions-top {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+        z-index: 10;
+        display: flex;
+        gap: 6px;
+    }
+    
+    .btn-action-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        background-color: var(--background-color);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action-icon:hover {
+        background-color: var(--input-focus-shadow);
+        border-color: var(--input-focus-border);
+        color: var(--primary-color);
+        transform: scale(1.05);
+    }
+    
+    .btn-action-icon.text-danger:hover {
+        color: var(--danger-color) !important;
+        border-color: rgba(239, 68, 68, 0.2) !important;
+        background-color: rgba(239, 68, 68, 0.05) !important;
+    }
+
+    /* WABA DP Styles */
+    .waba-dp-wrapper {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 2.5px solid var(--border-color);
+        overflow: hidden;
+        background: linear-gradient(135deg, var(--input-focus-shadow), rgba(99, 102, 241, 0.1));
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .waba-dp-wrapper:hover {
+        border-color: var(--primary-color);
+        transform: scale(1.05) rotate(5deg);
+    }
+    
+    .waba-dp-wrapper:hover .waba-dp-overlay {
+        opacity: 1;
+    }
+    
+    .waba-dp-overlay {
         position: absolute;
         top: 0;
         left: 0;
-        right: 0;
-        height: 4px;
-        background-color: var(--border-color);
-        transition: var(--transition-normal);
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 2;
     }
-    .waba-card.active::before {
-        background-color: var(--success-color);
+    
+    .waba-dp-overlay i {
+        font-size: 1.15rem;
     }
-    .waba-card.inactive::before {
-        background-color: var(--danger-color);
+
+    /* Metadata List */
+    .waba-details {
+        margin-top: 1.25rem;
     }
-    .waba-detail-label {
-        font-size: 0.78rem;
-        font-weight: 600;
+    
+    .meta-detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0;
+        border-bottom: 1px dashed var(--border-color);
+        font-size: 0.85rem;
+    }
+    
+    .meta-detail-row:last-of-type {
+        border-bottom: none;
+    }
+    
+    .meta-label {
+        font-weight: 500;
         color: var(--text-secondary);
-        text-transform: uppercase;
-        margin-bottom: 0.1rem;
     }
-    .waba-detail-value {
-        font-size: 0.92rem;
-        color: var(--text-primary);
-        word-break: break-all;
-        margin-bottom: 0.8rem;
+    
+    .meta-value {
         font-family: var(--font-mono, monospace);
+        color: var(--text-primary);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
+    
+    /* Code Snippet Box for Webhook */
+    .webhook-box {
+        background-color: var(--background-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 0.85rem;
+        margin-top: 1rem;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    
+    [data-theme="dark"] .webhook-box {
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+    }
+    
+    .webhook-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.5px;
+        margin-bottom: 0.4rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .webhook-value-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        background-color: rgba(0, 0, 0, 0.02);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        font-family: var(--font-mono, monospace);
+        color: var(--text-secondary);
+        border: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    [data-theme="dark"] .webhook-value-container {
+        background-color: rgba(255, 255, 255, 0.02);
+        border-color: rgba(255,255,255,0.03);
+    }
+
+    .copy-btn-inline {
+        background: transparent;
+        border: none;
+        color: var(--primary-color);
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        transition: color 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+    
+    .copy-btn-inline:hover {
+        color: var(--primary-hover);
+    }
+
+    /* Action buttons styles */
+    .btn-action-pill {
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 0.45rem 0.9rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        flex: 1;
+        min-width: 85px;
+    }
+    
+    .btn-action-pill:hover {
+        transform: translateY(-1px);
+    }
+    
     .copy-btn {
         background: transparent;
         border: none;
@@ -58,6 +237,7 @@
         margin-left: 0.4rem;
         transition: transform 0.2s ease;
     }
+    
     .copy-btn:hover {
         transform: scale(1.15);
     }
@@ -202,97 +382,127 @@
             @else
                 @foreach($wabas as $waba)
                     <div class="col-md-6 col-xl-4">
-                        <div class="card waba-card h-100 p-4 {{ $waba->status ? 'active' : 'inactive' }}">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="fw-bold mb-0 text-truncate" style="max-width: 180px; color: var(--text-primary);">{{ $waba->display_name }}</h5>
-                                    <span class="text-muted" style="font-size: 0.78rem;">ID: {{ $waba->id }}</span>
+                        <div class="card waba-card p-4">
+                            <!-- Top Right Actions Group -->
+                            <div class="card-actions-top">
+                                <!-- Edit -->
+                                <button class="btn-action-icon edit-waba-btn"
+                                    data-id="{{ $waba->id }}"
+                                    data-name="{{ $waba->display_name }}"
+                                    data-token="{{ $waba->meta_access_token }}"
+                                    data-phoneid="{{ $waba->phone_number_id }}"
+                                    data-wabaid="{{ $waba->whatsapp_business_account_id }}"
+                                    data-appid="{{ $waba->meta_app_id }}"
+                                    title="Edit WABA Settings">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <!-- Toggle status -->
+                                <button class="btn-action-icon toggle-status-btn" data-id="{{ $waba->id }}" title="Toggle Status">
+                                    <i class="bi {{ $waba->status ? 'bi-toggle-on text-success' : 'bi-toggle-off text-muted' }}" style="font-size: 1.1rem; line-height: 1;"></i>
+                                </button>
+                                <!-- Delete -->
+                                <button class="btn-action-icon text-danger delete-waba-btn" data-id="{{ $waba->id }}" title="Delete Account">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Card Header with DP -->
+                            <div class="d-flex align-items-center gap-3 mb-2" style="margin-right: 110px;">
+                                <div class="waba-dp-wrapper" data-id="{{ $waba->id }}" title="Click to upload profile picture / DP">
+                                    @if($waba->profile_picture_url)
+                                        <img src="{{ asset($waba->profile_picture_url) }}" id="waba-dp-img-{{ $waba->id }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    @else
+                                        <div id="waba-dp-placeholder-{{ $waba->id }}" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 700; color: var(--primary-color);">
+                                            {{ strtoupper(substr($waba->display_name, 0, 1)) }}
+                                        </div>
+                                        <img id="waba-dp-img-{{ $waba->id }}" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                    @endif
+                                    <div class="waba-dp-overlay">
+                                        <i class="bi bi-camera-fill"></i>
+                                    </div>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge {{ $waba->status ? 'bg-success' : 'bg-danger' }} text-white" style="font-size: 0.72rem; border-radius: 4px;">
-                                        {{ $waba->status ? 'Active' : 'Inactive' }}
+                                <input type="file" id="waba-dp-input-{{ $waba->id }}" class="waba-dp-file-input d-none" data-id="{{ $waba->id }}" accept="image/*">
+                                <div class="w-100 min-w-0">
+                                    <h5 class="fw-bold mb-1 text-truncate" style="color: var(--text-primary); font-size: 1.05rem;" title="{{ $waba->display_name }}">{{ $waba->display_name }}</h5>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge {{ $waba->status ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }} px-1.5 py-0.5" style="font-size: 0.65rem; font-weight: 600; border-radius: 4px;">
+                                            {{ $waba->status ? 'Active' : 'Inactive' }}
+                                        </span>
+                                        <span class="text-muted" style="font-size: 0.72rem; font-weight: 500;">ID: {{ $waba->id }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-2.5 text-muted" style="opacity: 0.15;">
+
+                            <!-- Metadata List -->
+                            <div class="waba-details flex-grow-1">
+                                <div class="meta-detail-row">
+                                    <span class="meta-label">Phone Number ID</span>
+                                    <span class="meta-value">
+                                        <span>{{ strlen($waba->phone_number_id) > 15 ? substr($waba->phone_number_id, 0, 12) . '...' : $waba->phone_number_id }}</span>
+                                        <button class="copy-btn" onclick="copyToClipboard('{{ $waba->phone_number_id }}')" title="Copy Phone Number ID">
+                                            <i class="bi bi-clipboard" style="font-size: 0.78rem;"></i>
+                                        </button>
                                     </span>
                                 </div>
-                            </div>
 
-                            <hr class="my-2 text-muted">
-
-                            <div class="waba-details mt-2">
-                                <div class="waba-detail-label">Phone Number ID</div>
-                                <div class="waba-detail-value">
-                                    <span>{{ $waba->phone_number_id }}</span>
-                                    <button class="copy-btn" onclick="copyToClipboard('{{ $waba->phone_number_id }}')" title="Copy Phone Number ID">
-                                        <i class="bi bi-clipboard"></i>
-                                    </button>
-                                </div>
-
-                                <div class="waba-detail-label">WABA ID</div>
-                                <div class="waba-detail-value">
-                                    <span>{{ $waba->whatsapp_business_account_id }}</span>
-                                    <button class="copy-btn" onclick="copyToClipboard('{{ $waba->whatsapp_business_account_id }}')" title="Copy WABA ID">
-                                        <i class="bi bi-clipboard"></i>
-                                    </button>
-                                </div>
-
-                                <div class="waba-detail-label">App ID</div>
-                                <div class="waba-detail-value">{{ $waba->meta_app_id }}</div>
-
-                                <div class="waba-detail-label">Webhook Callback URL</div>
-                                <div class="waba-detail-value mb-2">
-                                    <div class="input-group input-group-sm">
-                                        <input type="text" class="form-control form-control-sm bg-transparent border-secondary-subtle text-muted" value="{{ url('/webhook/whatsapp/' . $waba->verify_token) }}" id="waba-webhook-url-text-{{ $waba->id }}" readonly style="font-size: 0.75rem; font-family: monospace;">
-                                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="copyToClipboard($('#waba-webhook-url-text-{{ $waba->id }}').val())">
-                                            <i class="bi bi-clipboard"></i>
+                                <div class="meta-detail-row">
+                                    <span class="meta-label">WABA ID</span>
+                                    <span class="meta-value">
+                                        <span>{{ strlen($waba->whatsapp_business_account_id) > 15 ? substr($waba->whatsapp_business_account_id, 0, 12) . '...' : $waba->whatsapp_business_account_id }}</span>
+                                        <button class="copy-btn" onclick="copyToClipboard('{{ $waba->whatsapp_business_account_id }}')" title="Copy WABA ID">
+                                            <i class="bi bi-clipboard" style="font-size: 0.78rem;"></i>
                                         </button>
-                                    </div>
+                                    </span>
                                 </div>
 
-                                <div class="waba-detail-label">Verify Token</div>
-                                <div class="waba-detail-value d-flex align-items-center justify-content-between gap-2">
-                                    <span id="waba-verify-token-text-{{ $waba->id }}" class="font-monospace" style="font-size: 0.85rem; font-family: monospace; word-break: break-all; color: var(--text-primary);">{{ $waba->verify_token }}</span>
-                                    <div class="d-flex align-items-center gap-1.5">
-                                        <button class="btn btn-xs btn-link p-0 text-decoration-none" onclick="copyToClipboard($('#waba-verify-token-text-{{ $waba->id }}').text())" title="Copy Verify Token" style="font-size: 0.8rem; color: var(--primary-color);">
+                                <div class="meta-detail-row">
+                                    <span class="meta-label">Meta App ID</span>
+                                    <span class="meta-value">{{ $waba->meta_app_id }}</span>
+                                </div>
+
+                                <!-- Webhook Configuration details -->
+                                <div class="webhook-box">
+                                    <div class="webhook-title">
+                                        <span>Callback URL</span>
+                                        <button class="copy-btn-inline" onclick="copyToClipboard('{{ url('/webhook/whatsapp/' . $waba->verify_token) }}')" title="Copy Callback URL">
                                             <i class="bi bi-clipboard"></i> Copy
                                         </button>
-                                        <span class="text-muted" style="font-size: 0.8rem;">|</span>
-                                        <button class="btn btn-xs btn-link p-0 text-decoration-none regenerate-token-btn" data-id="{{ $waba->id }}" title="Regenerate Verify Token" style="font-size: 0.8rem; color: var(--warning-color);">
-                                            <i class="bi bi-arrow-repeat"></i> Regenerate
-                                        </button>
+                                    </div>
+                                    <div class="webhook-value-container mb-2">
+                                        <span class="text-truncate" style="max-width: 100%;">{{ url('/webhook/whatsapp/' . $waba->verify_token) }}</span>
+                                    </div>
+
+                                    <div class="webhook-title mt-2.5">
+                                        <span>Verify Token</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <button class="copy-btn-inline" onclick="copyToClipboard($('#waba-verify-token-text-{{ $waba->id }}').text())" title="Copy Token">
+                                                <i class="bi bi-clipboard"></i> Copy
+                                            </button>
+                                            <span class="text-muted" style="font-size: 0.7rem;">|</span>
+                                            <button class="btn btn-link p-0 text-decoration-none regenerate-token-btn" data-id="{{ $waba->id }}" title="Regenerate Token" style="font-size: 0.7rem; color: var(--warning-color); font-weight: 600;">
+                                                <i class="bi bi-arrow-repeat"></i> Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="webhook-value-container">
+                                        <span id="waba-verify-token-text-{{ $waba->id }}" class="text-truncate" style="max-width: 100%;">{{ $waba->verify_token }}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="mt-auto pt-3 border-top d-flex flex-wrap gap-2 justify-content-between">
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-sm btn-outline-success verify-conn-btn" data-id="{{ $waba->id }}" title="Verify WABA Meta API Connection">
-                                        <i class="bi bi-shield-check"></i> Verify
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-primary test-msg-btn" data-id="{{ $waba->id }}" title="Send Test WhatsApp Message">
-                                        <i class="bi bi-send"></i> Test Msg
-                                    </button>
-                                </div>
-
-                                <div class="d-flex gap-1">
-                                    <!-- Edit -->
-                                    <button class="btn btn-sm btn-light border edit-waba-btn"
-                                        data-id="{{ $waba->id }}"
-                                        data-name="{{ $waba->display_name }}"
-                                        data-token="{{ $waba->meta_access_token }}"
-                                        data-phoneid="{{ $waba->phone_number_id }}"
-                                        data-wabaid="{{ $waba->whatsapp_business_account_id }}"
-                                        data-appid="{{ $waba->meta_app_id }}"
-                                        title="Edit WABA Settings">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <!-- Toggle status -->
-                                    <button class="btn btn-sm btn-light border toggle-status-btn" data-id="{{ $waba->id }}" title="Toggle WABA status">
-                                        <i class="bi {{ $waba->status ? 'bi-toggle-on text-success' : 'bi-toggle-off text-muted' }}" style="font-size: 1.1rem; line-height: 1;"></i>
-                                    </button>
-                                    <!-- Delete -->
-                                    <button class="btn btn-sm btn-light border text-danger delete-waba-btn" data-id="{{ $waba->id }}" title="Delete Account">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
+                            <!-- Bottom Action Pills -->
+                            <div class="mt-4 pt-3 border-top d-flex gap-2 justify-content-between">
+                                <button class="btn btn-sm btn-outline-success btn-action-pill verify-conn-btn" data-id="{{ $waba->id }}">
+                                    <i class="bi bi-shield-check"></i> Verify API
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary btn-action-pill test-msg-btn" data-id="{{ $waba->id }}">
+                                    <i class="bi bi-send"></i> Test Msg
+                                </button>
+                                <button class="btn btn-sm btn-outline-info btn-action-pill sync-dp-btn" data-id="{{ $waba->id }}">
+                                    <i class="bi bi-arrow-clockwise"></i> Sync DP
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -764,6 +974,80 @@
                         background: 'var(--card-background)',
                         color: 'var(--text-primary)'
                     });
+                }
+            });
+        });
+
+        // Trigger WABA DP Upload File Selection
+        $(document).on('click', '.waba-dp-wrapper', function() {
+            const id = $(this).data('id');
+            $(`#waba-dp-input-${id}`).trigger('click');
+        });
+
+        // Handle WABA DP File Upload
+        $(document).on('change', '.waba-dp-file-input', function() {
+            const id = $(this).data('id');
+            const file = this.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('_token', "{{ csrf_token() }}");
+
+            Notiflix.Loading.circle('Uploading profile picture...');
+
+            $.ajax({
+                url: `/wabas/${id}/upload-dp`,
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    Notiflix.Loading.remove();
+                    if (response.status) {
+                        Notiflix.Notify.success(response.message);
+                        $(`#waba-dp-img-${id}`).attr('src', response.profile_picture_url).show();
+                        $(`#waba-dp-placeholder-${id}`).hide();
+                    }
+                },
+                error: function(xhr) {
+                    Notiflix.Loading.remove();
+                    let msg = 'Failed to upload profile picture.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Notiflix.Notify.failure(msg);
+                }
+            });
+        });
+
+        // Handle WABA DP Meta Sync
+        $(document).on('click', '.sync-dp-btn', function() {
+            const id = $(this).data('id');
+            Notiflix.Loading.circle('Syncing DP from Meta...');
+
+            $.ajax({
+                url: `/wabas/${id}/sync-dp`,
+                type: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                dataType: "json",
+                success: function(response) {
+                    Notiflix.Loading.remove();
+                    if (response.status) {
+                        Notiflix.Notify.success(response.message);
+                        $(`#waba-dp-img-${id}`).attr('src', response.profile_picture_url).show();
+                        $(`#waba-dp-placeholder-${id}`).hide();
+                    }
+                },
+                error: function(xhr) {
+                    Notiflix.Loading.remove();
+                    let msg = 'Failed to sync DP from Meta.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Notiflix.Notify.failure(msg);
                 }
             });
         });

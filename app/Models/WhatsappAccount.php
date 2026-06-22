@@ -13,7 +13,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
     'whatsapp_business_account_id',
     'meta_app_id',
     'verify_token',
-    'status'
+    'status',
+    'profile_picture_url'
 ])]
 class WhatsappAccount extends Model
 {

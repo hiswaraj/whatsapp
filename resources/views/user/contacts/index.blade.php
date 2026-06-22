@@ -128,6 +128,7 @@
                 <table class="table table-hover align-middle w-100" id="contacts-table">
                     <thead>
                         <tr>
+                            <th style="width: 50px;">Avatar</th>
                             <th>Name</th>
                             <th>Mobile Number</th>
                             <th>Email</th>
@@ -140,6 +141,15 @@
                     <tbody>
                         @foreach($contacts as $contact)
                             <tr>
+                                <td>
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background-color: var(--input-focus-shadow); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                                        @if($contact->avatar_url)
+                                            <img src="{{ asset($contact->avatar_url) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                        @else
+                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($contact->name) }}&background=random&color=fff&size=128" style="width: 100%; height: 100%; object-fit: cover;">
+                                        @endif
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="fw-semibold text-primary-hover">{{ $contact->name }}</div>
                                 </td>
@@ -202,13 +212,17 @@
 <div class="modal fade" id="createContactModal" tabindex="-1" aria-labelledby="createContactModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background-color: var(--card-background); border: 1px solid var(--border-color); border-radius: var(--border-radius-md);">
-            <form id="create-contact-form">
+            <form id="create-contact-form" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold" id="createContactModalLabel">Create Contact</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="avatar" class="form-label fw-semibold">Profile Picture / Avatar</label>
+                        <input type="file" name="avatar" class="form-control form-control-custom" accept="image/*">
+                    </div>
                     <div class="mb-3">
                         <label for="name" class="form-label fw-semibold">Name</label>
                         <input type="text" name="name" class="form-control form-control-custom" placeholder="John Doe" required>
@@ -251,7 +265,7 @@
 <div class="modal fade" id="editContactModal" tabindex="-1" aria-labelledby="editContactModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background-color: var(--card-background); border: 1px solid var(--border-color); border-radius: var(--border-radius-md);">
-            <form id="edit-contact-form">
+            <form id="edit-contact-form" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <input type="hidden" id="edit-contact-id">
@@ -260,6 +274,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit-avatar" class="form-label fw-semibold">Profile Picture / Avatar (Optional)</label>
+                        <input type="file" name="avatar" id="edit-avatar" class="form-control form-control-custom" accept="image/*">
+                    </div>
                     <div class="mb-3">
                         <label for="edit-name" class="form-label fw-semibold">Name</label>
                         <input type="text" name="name" id="edit-name" class="form-control form-control-custom" required>
@@ -374,10 +392,14 @@
             e.preventDefault();
             Notiflix.Loading.circle('Saving contact...');
 
+            const formData = new FormData(this);
+
             $.ajax({
                 url: "{{ route('contacts.store') }}",
                 type: "POST",
-                data: $(this).serialize(),
+                data: formData,
+                contentType: false,
+                processData: false,
                 dataType: "json",
                 success: function(response) {
                     Notiflix.Loading.remove();
@@ -427,10 +449,14 @@
             const id = $('#edit-contact-id').val();
             Notiflix.Loading.circle('Updating contact...');
 
+            const formData = new FormData(this);
+
             $.ajax({
                 url: `/contacts/${id}`,
                 type: "POST",
-                data: $(this).serialize(),
+                data: formData,
+                contentType: false,
+                processData: false,
                 dataType: "json",
                 success: function(response) {
                     Notiflix.Loading.remove();

@@ -49,6 +49,8 @@ Route::namespace('App\\Http\\Controllers')->group(function () {
         Route::post('/wabas/{id}/verify', 'WabaController@verifyConnection')->name('wabas.verify');
         Route::post('/wabas/{id}/test-message', 'WabaController@testMessage')->name('wabas.test-message');
         Route::post('/wabas/{id}/regenerate-token', 'WabaController@regenerateVerifyToken')->name('wabas.regenerate-token');
+        Route::post('/wabas/{id}/sync-dp', 'WabaController@syncDp')->name('wabas.sync-dp');
+        Route::post('/wabas/{id}/upload-dp', 'WabaController@uploadDp')->name('wabas.upload-dp');
 
         // Templates
         Route::get('/templates', 'TemplateController@index')->name('templates.index');

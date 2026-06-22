@@ -51,7 +51,8 @@ class ContactController extends Controller
             'tags' => 'nullable|string',
             'notes' => 'nullable|string',
             'group_ids' => 'nullable|array',
-            'group_ids.*' => 'exists:contact_groups,id'
+            'group_ids.*' => 'exists:contact_groups,id',
+            'avatar' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048'
         ]);
 
         if ($validation->fails()) {
@@ -81,13 +82,30 @@ class ContactController extends Controller
             $tags = array_map('trim', explode(',', $validated['tags']));
         }
 
+        // Store avatar
+        $avatarUrl = null;
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $extension = $file->getClientOriginalExtension();
+            $filename = "contact_avatar_" . uniqid() . '.' . $extension;
+
+            $destinationPath = public_path('uploads/contact_avatars');
+            if (!\Illuminate\Support\Facades\File::exists($destinationPath)) {
+                \Illuminate\Support\Facades\File::makeDirectory($destinationPath, 0755, true);
+            }
+
+            $file->move($destinationPath, $filename);
+            $avatarUrl = 'uploads/contact_avatars/' . $filename;
+        }
+
         $contact = Contact::create([
             'user_id' => $userId,
             'name' => $validated['name'],
             'mobile_number' => $validated['mobile_number'],
             'email' => $validated['email'],
             'tags' => $tags,
-            'notes' => $validated['notes']
+            'notes' => $validated['notes'],
+            'avatar_url' => $avatarUrl
         ]);
 
         // Attach groups
@@ -116,7 +134,8 @@ class ContactController extends Controller
             'tags' => 'nullable|string',
             'notes' => 'nullable|string',
             'group_ids' => 'nullable|array',
-            'group_ids.*' => 'exists:contact_groups,id'
+            'group_ids.*' => 'exists:contact_groups,id',
+            'avatar' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048'
         ]);
 
         if ($validation->fails()) {
@@ -147,12 +166,36 @@ class ContactController extends Controller
             $tags = array_map('trim', explode(',', $validated['tags']));
         }
 
+        // Update avatar
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $extension = $file->getClientOriginalExtension();
+
+            if ($contact->avatar_url) {
+                $oldPath = public_path($contact->avatar_url);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            $filename = "contact_avatar_" . uniqid() . '.' . $extension;
+
+            $destinationPath = public_path('uploads/contact_avatars');
+            if (!\Illuminate\Support\Facades\File::exists($destinationPath)) {
+                \Illuminate\Support\Facades\File::makeDirectory($destinationPath, 0755, true);
+            }
+
+            $file->move($destinationPath, $filename);
+            $contact->avatar_url = 'uploads/contact_avatars/' . $filename;
+        }
+
         $contact->update([
             'name' => $validated['name'],
             'mobile_number' => $validated['mobile_number'],
             'email' => $validated['email'],
             'tags' => $tags,
-            'notes' => $validated['notes']
+            'notes' => $validated['notes'],
+            'avatar_url' => $contact->avatar_url
         ]);
 
         // Sync groups

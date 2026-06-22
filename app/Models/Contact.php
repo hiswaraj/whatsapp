@@ -12,7 +12,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
     'email',
     'tags',
     'notes',
-    'is_temporary'
+    'is_temporary',
+    'avatar_url'
 ])]
 class Contact extends Model
 {
