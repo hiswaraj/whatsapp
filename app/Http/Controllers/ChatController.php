@@ -135,7 +135,8 @@ class ChatController extends Controller
             'message_type' => 'required|string|in:text,template',
             'body' => 'required_if:message_type,text|nullable|string',
             'template_id' => 'required_if:message_type,template|nullable|exists:templates,id,user_id,' . $userId,
-            'template_variables' => 'nullable|array'
+            'template_variables' => 'nullable|array',
+            'header_media_id' => 'nullable|exists:media_library,id,user_id,' . $userId,
         ]);
 
         if ($validation->fails()) {
@@ -150,13 +151,35 @@ class ChatController extends Controller
         $waba = $conversation->whatsappAccount;
         $contact = $conversation->contact;
 
+        $messageType = $validated['message_type'];
+
+        if ($messageType !== 'template') {
+            $lastIncoming = Message::where('conversation_id', $conversation->id)
+                ->where('type', 'incoming')
+                ->where('created_at', '<=', now())
+                ->latest()
+                ->first();
+
+            $windowActive = false;
+            if ($lastIncoming) {
+                $expiresAt = $lastIncoming->created_at->addHours(24);
+                $windowActive = $expiresAt->isFuture();
+            }
+
+            if (!$windowActive) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The 24-hour chat window has expired. You can only send template messages to this contact.'
+                ], 403);
+            }
+        }
+
         $token = $waba->meta_access_token;
         $isMock = str_starts_with($token, 'mock_');
 
-        $messageType = $validated['message_type'];
-
         // Determine message body content to save and send
         $bodyText = '';
+        $mediaPath = null;
         $metaTemplateId = null;
         $payload = [];
 
@@ -170,9 +193,41 @@ class ChatController extends Controller
             
             // Reconstruct text body with bound variables for our local DB record
             $rawBodyText = '';
+            $headerComp = null;
             foreach ($template->components as $comp) {
                 if ($comp['type'] === 'BODY') {
                     $rawBodyText = $comp['text'];
+                } elseif ($comp['type'] === 'HEADER') {
+                    $headerComp = $comp;
+                }
+            }
+
+            // Compile Header attachment parameters if template has a media header
+            if ($headerComp && in_array($headerComp['format'] ?? '', ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
+                $headerFormat = strtolower($headerComp['format']);
+                if ($request->filled('header_media_id')) {
+                    $media = \App\Models\MediaLibrary::where('user_id', $userId)->findOrFail($request->input('header_media_id'));
+                    $mediaPath = $media->file_path;
+                    $mediaUrl = asset($mediaPath);
+                    if ($isMock) {
+                        $mediaUrl = $mediaPath;
+                    }
+                    
+                    $headerParam = [
+                        'type' => $headerFormat,
+                        $headerFormat => [
+                            'link' => $mediaUrl
+                        ]
+                    ];
+                    
+                    if ($headerFormat === 'document') {
+                        $headerParam['document']['filename'] = $media->filename;
+                    }
+                    
+                    $componentsPayload[] = [
+                        'type' => 'header',
+                        'parameters' => [$headerParam]
+                    ];
                 }
             }
 
@@ -234,6 +289,7 @@ class ChatController extends Controller
                 'type' => 'outgoing',
                 'message_type' => $messageType,
                 'body' => $bodyText,
+                'media_path' => $mediaPath,
                 'meta_template_id' => $metaTemplateId,
                 'status' => 'sent'
             ]);
@@ -297,6 +353,7 @@ class ChatController extends Controller
                     'type' => 'outgoing',
                     'message_type' => $messageType,
                     'body' => $bodyText,
+                    'media_path' => $mediaPath,
                     'meta_template_id' => $metaTemplateId,
                     'status' => 'sent'
                 ]);

@@ -688,6 +688,22 @@
                         <div class="p-3 border rounded bg-light text-dark small" style="white-space: pre-wrap; font-family: inherit;" id="template-preview-body"></div>
                     </div>
 
+                    <!-- Header media input container -->
+                    <div class="mb-3 d-none" id="template-header-media-container">
+                        <label class="form-label fw-semibold" id="template-header-media-label">Header Media</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-secondary d-flex align-items-center justify-content-between w-100 py-2" id="template-header-media-btn" style="border-radius: var(--border-radius-md); border-color: var(--border-color); background: transparent; color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; text-align: left;">
+                                <span class="d-flex align-items-center gap-1">
+                                    <i class="bi bi-paperclip" style="font-size: 1.1rem;"></i>
+                                    <span id="template-header-media-btn-text">Select Media File</span>
+                                </span>
+                                <i class="bi bi-chevron-right text-muted small"></i>
+                            </button>
+                            <input type="hidden" name="header_media_id" id="template-header-media-id">
+                            <button type="button" class="btn btn-outline-danger d-none d-flex align-items-center justify-content-center" id="template-header-media-clear" title="Clear media" style="height: 38px; width: 38px; border-radius: var(--border-radius-md); border-color: var(--border-color); flex-shrink: 0;"><i class="bi bi-x" style="font-size: 1.25rem;"></i></button>
+                        </div>
+                    </div>
+
                     <!-- Dynamic parameter variables input container -->
                     <div class="mb-3 d-none" id="template-variables-container">
                         <label class="form-label fw-semibold">Bind Template Variables</label>
@@ -859,6 +875,7 @@
         let conversationsList = [];
         let pollingInterval = null;
         let chatCountdownInterval = null;
+        let pickerTarget = 'chat';
 
         // Parse conversation_id from URL query parameter on load
         const urlParams = new URLSearchParams(window.location.search);
@@ -1055,6 +1072,9 @@
             // Attach scroll submit handler
             $('#send-chat-msg-form').on('submit', function(e) {
                 e.preventDefault();
+                if ($('.chat-input-field').prop('disabled')) {
+                    return;
+                }
                 sendTextMessage();
             });
 
@@ -1062,7 +1082,9 @@
             $('.chat-input-field').on('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    $('#send-chat-msg-form').submit();
+                    if (!$('.chat-input-field').prop('disabled')) {
+                        $('#send-chat-msg-form').submit();
+                    }
                 }
             });
 
@@ -1077,6 +1099,8 @@
 
             // Trigger Media Picker modal
             $('#chat-attachment-btn').on('click', function() {
+                if ($(this).prop('disabled')) return;
+                pickerTarget = 'chat';
                 openMediaPickerModal();
             });
 
@@ -1085,6 +1109,83 @@
                 clearChatAttachment();
             });
         }
+
+        // Toggles active/expired state of chat message input controls
+        function toggleChatInputState(isActive) {
+            const textarea = $('.chat-input-field');
+            const attachBtn = $('#chat-attachment-btn');
+            const sendBtn = $('.btn-send');
+            
+            if (isActive) {
+                textarea.prop('disabled', false);
+                if (textarea.attr('placeholder') !== 'Type a message...') {
+                    textarea.attr('placeholder', 'Type a message...');
+                }
+                attachBtn.prop('disabled', false).css({
+                    'pointer-events': 'auto',
+                    'opacity': '1',
+                    'cursor': 'pointer'
+                });
+                sendBtn.prop('disabled', false).css({
+                    'pointer-events': 'auto',
+                    'opacity': '1',
+                    'cursor': 'pointer'
+                });
+            } else {
+                textarea.prop('disabled', true);
+                textarea.val('');
+                textarea.attr('placeholder', 'Chat window expired. Use "Send Template" to initiate chat.');
+                attachBtn.prop('disabled', true).css({
+                    'pointer-events': 'none',
+                    'opacity': '0.5',
+                    'cursor': 'not-allowed'
+                });
+                sendBtn.prop('disabled', true).css({
+                    'pointer-events': 'none',
+                    'opacity': '0.5',
+                    'cursor': 'not-allowed'
+                });
+                clearChatAttachment();
+            }
+        }
+
+        // Clear template header media selection
+        function clearTemplateHeaderMedia() {
+            $('#template-header-media-id').val('');
+            $('#template-header-media-btn-text').text('Select Media File');
+            $('#template-header-media-clear').addClass('d-none');
+        }
+
+        // Setup Modal Transition Event Listeners
+        $('#sendTemplateModal').on('hidden.bs.modal', function () {
+            if (pickerTarget === 'template_header') {
+                setTimeout(function() {
+                    openMediaPickerModal();
+                }, 350);
+            }
+        });
+
+        $('#mediaPickerModal').on('hidden.bs.modal', function () {
+            if (pickerTarget === 'template_header') {
+                pickerTarget = 'chat'; // Reset target
+                setTimeout(function() {
+                    $('#sendTemplateModal').modal('show');
+                }, 350);
+            }
+        });
+
+        // Event handler for opening media library from template header attachment selector
+        $(document).on('click', '#template-header-media-btn', function(e) {
+            e.preventDefault();
+            pickerTarget = 'template_header';
+            $('#sendTemplateModal').modal('hide');
+        });
+
+        // Event handler for clearing selected media header attachment
+        $(document).on('click', '#template-header-media-clear', function(e) {
+            e.preventDefault();
+            clearTemplateHeaderMedia();
+        });
 
         // Fetch Messages for open chat
         function fetchMessages(convId, isQuietPoll = false) {
@@ -1119,22 +1220,26 @@
                                             clearInterval(chatCountdownInterval);
                                             $('#chat-24hr-badge').hide();
                                             $('#chat-expired-badge').show();
+                                            toggleChatInputState(false);
                                         } else {
                                             updateCountdownDisplay(remainingSeconds);
                                         }
                                     }, 1000);
                                 }
+                                toggleChatInputState(true);
                             } else {
                                 clearInterval(chatCountdownInterval);
                                 chatCountdownInterval = null;
                                 $('#chat-24hr-badge').hide();
                                 $('#chat-expired-badge').show();
+                                toggleChatInputState(false);
                             }
                         } else {
                             clearInterval(chatCountdownInterval);
                             chatCountdownInterval = null;
                             $('#chat-24hr-badge').hide();
                             $('#chat-expired-badge').hide();
+                            toggleChatInputState(true);
                         }
 
                         // Keep track of scroll height
@@ -1208,23 +1313,36 @@
                 let messageBody = '';
                 if (msg.media_path) {
                     const mediaUrl = window.location.origin + '/' + msg.media_path;
-                    if (msg.message_type === 'image') {
-                        messageBody = `<div class="mb-1"><img src="${mediaUrl}" class="img-fluid rounded" style="max-height: 200px; cursor: pointer; object-fit: cover; display: block;" onclick="window.open('${mediaUrl}')"></div>`;
-                    } else if (msg.message_type === 'video') {
-                        messageBody = `<div class="mb-1"><video src="${mediaUrl}" controls class="img-fluid rounded" style="max-height: 200px; max-width: 100%; display: block;"></video></div>`;
-                    } else if (msg.message_type === 'audio') {
-                        messageBody = `<div class="mb-1"><audio src="${mediaUrl}" controls style="max-width: 100%; display: block;"></audio></div>`;
-                    } else if (msg.message_type === 'document') {
+                    let mediaHtml = '';
+                    
+                    const isImg = /\.(jpeg|jpg|gif|png|webp)$/i.test(msg.media_path);
+                    const isVid = /\.(mp4|webm|ogg)$/i.test(msg.media_path);
+                    const isAud = /\.(mp3|wav|ogg)$/i.test(msg.media_path);
+                    
+                    if (msg.message_type === 'image' || isImg) {
+                        mediaHtml = `<div class="mb-1"><img src="${mediaUrl}" class="img-fluid rounded" style="max-height: 200px; cursor: pointer; object-fit: cover; display: block;" onclick="window.open('${mediaUrl}')"></div>`;
+                    } else if (msg.message_type === 'video' || isVid) {
+                        mediaHtml = `<div class="mb-1"><video src="${mediaUrl}" controls class="img-fluid rounded" style="max-height: 200px; max-width: 100%; display: block;"></video></div>`;
+                    } else if (msg.message_type === 'audio' || isAud) {
+                        mediaHtml = `<div class="mb-1"><audio src="${mediaUrl}" controls style="max-width: 100%; display: block;"></audio></div>`;
+                    } else {
                         const filename = msg.body || 'Attached Document';
-                        messageBody = `
-                            <a href="${mediaUrl}" download="${filename}" class="d-flex align-items-center gap-2 p-2 rounded text-decoration-none mb-1" style="background-color: var(--background-color); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); min-width: 180px; display: inline-flex;">
+                        const docName = msg.message_type === 'template' ? msg.media_path.split('/').pop() : filename;
+                        mediaHtml = `
+                            <a href="${mediaUrl}" download="${docName}" class="d-flex align-items-center gap-2 p-2 rounded text-decoration-none mb-1" style="background-color: var(--background-color); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); min-width: 180px; display: inline-flex;">
                                 <i class="bi bi-file-earmark-arrow-down-fill text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="overflow-hidden" style="text-align: left;">
-                                    <div class="text-truncate small fw-semibold text-primary" style="max-width: 180px;">${$('<div>').text(filename).html()}</div>
+                                    <div class="text-truncate small fw-semibold text-primary" style="max-width: 180px;">${$('<div>').text(docName).html()}</div>
                                     <div class="text-muted" style="font-size: 0.65rem;">Download Document</div>
                                 </div>
                             </a>
                         `;
+                    }
+                    
+                    messageBody = mediaHtml;
+                    if (msg.message_type === 'template' && msg.body) {
+                        let textBody = $('<div>').text(msg.body).html().replace(/\n/g, '<br>');
+                        messageBody += `<div class="mt-2 text-wrap">${textBody}</div>`;
                     }
                 } else {
                     messageBody = $('<div>').text(msg.body).html();
@@ -1298,19 +1416,34 @@
             
             $('#template-preview-card').addClass('d-none');
             $('#template-variables-container').addClass('d-none');
+            $('#template-header-media-container').addClass('d-none');
             container.empty();
+            clearTemplateHeaderMedia();
 
             if (!$(this).val()) return;
 
-            const components = selected.data('components');
+            const components = selected.data('components') || [];
             let bodyText = '';
+            let headerComp = null;
             
-            // Extract body component
+            // Extract components
             components.forEach(function(comp) {
                 if (comp.type === 'BODY') {
                     bodyText = comp.text;
+                } else if (comp.type === 'HEADER') {
+                    headerComp = comp;
                 }
             });
+
+            // Handle header media if applicable
+            if (headerComp && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerComp.format)) {
+                const formatLabel = headerComp.format.charAt(0) + headerComp.format.slice(1).toLowerCase();
+                $('#template-header-media-label').text(`Header Attachment (${formatLabel})`);
+                $('#template-header-media-container').removeClass('d-none');
+                $('#template-header-media-id').prop('required', true);
+            } else {
+                $('#template-header-media-id').prop('required', false);
+            }
 
             if (bodyText) {
                 $('#template-preview-body').text(bodyText);
@@ -1456,23 +1589,57 @@
             pickerSelectedMediaName = null;
             $('#picker-select-btn').prop('disabled', true);
             
-            // Set browse tab active
-            const triggerEl = document.querySelector('#pickerTabs button[data-bs-target="#browse-pane"]');
-            if (triggerEl) {
-                const tab = new bootstrap.Tab(triggerEl);
-                tab.show();
+            try {
+                // Set browse tab active
+                const triggerEl = document.querySelector('#pickerTabs button[data-bs-target="#browse-pane"]');
+                if (triggerEl && typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+                    const tab = new bootstrap.Tab(triggerEl);
+                    tab.show();
+                }
+            } catch (e) {
+                console.error('Error switching tab:', e);
+            }
+            
+            // Determine default filter based on target
+            let defaultFilter = 'all';
+            try {
+                if (pickerTarget === 'template_header') {
+                    const selectedOption = $('#template_select option:selected');
+                    if (selectedOption.length) {
+                        let components = selectedOption.data('components') || [];
+                        if (typeof components === 'string') {
+                            components = JSON.parse(components);
+                        }
+                        if (Array.isArray(components)) {
+                            const headerComp = components.find(c => c.type === 'HEADER');
+                            if (headerComp && headerComp.format) {
+                                defaultFilter = headerComp.format.toLowerCase();
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing template components:', e);
             }
             
             // Reset filters and search input
             $('#picker-type-filters button').removeClass('active');
-            $('#picker-type-filters button[data-type="all"]').addClass('active');
+            $(`#picker-type-filters button[data-type="${defaultFilter}"]`).addClass('active');
             $('#picker-search').val('');
 
             // Load media library list
-            fetchPickerMedia('all', '');
+            try {
+                fetchPickerMedia(defaultFilter, '');
+            } catch (e) {
+                console.error('Error fetching picker media:', e);
+            }
 
             // Show modal
-            $('#mediaPickerModal').modal('show');
+            try {
+                $('#mediaPickerModal').modal('show');
+            } catch (e) {
+                console.error('Error showing media picker modal:', e);
+            }
         }
 
         // Reset attachment fields on chat panel
@@ -1576,27 +1743,37 @@
         $(document).on('click', '#picker-select-btn', function() {
             if (!pickerSelectedMediaId) return;
 
-            // Update chat input form values
-            $('#chat-msg-type').val(pickerSelectedMediaType);
-            $('#chat-media-id').val(pickerSelectedMediaId);
+            if (pickerTarget === 'template_header') {
+                // Update template form hidden inputs
+                $('#template-header-media-id').val(pickerSelectedMediaId);
+                $('#template-header-media-btn-text').text(pickerSelectedMediaName);
+                $('#template-header-media-clear').removeClass('d-none');
 
-            // Populate the Preview Bar details
-            let iconClass = 'bi-file-earmark-fill';
-            if (pickerSelectedMediaType === 'image') iconClass = 'bi-image-fill';
-            else if (pickerSelectedMediaType === 'video') iconClass = 'bi-film';
-            else if (pickerSelectedMediaType === 'audio') iconClass = 'bi-music-note-beamed';
+                // Close modal
+                $('#mediaPickerModal').modal('hide');
+            } else {
+                // Update chat input form values
+                $('#chat-msg-type').val(pickerSelectedMediaType);
+                $('#chat-media-id').val(pickerSelectedMediaId);
 
-            $('#preview-file-icon').attr('class', 'bi ' + iconClass);
-            $('#preview-file-name').text(pickerSelectedMediaName);
+                // Populate the Preview Bar details
+                let iconClass = 'bi-file-earmark-fill';
+                if (pickerSelectedMediaType === 'image') iconClass = 'bi-image-fill';
+                else if (pickerSelectedMediaType === 'video') iconClass = 'bi-film';
+                else if (pickerSelectedMediaType === 'audio') iconClass = 'bi-music-note-beamed';
 
-            // Display attachment preview bar
-            $('#attachment-preview-container').removeClass('d-none');
-            
-            // Remove required attribute from input field
-            $('.chat-input-field').removeAttr('required');
+                $('#preview-file-icon').attr('class', 'bi ' + iconClass);
+                $('#preview-file-name').text(pickerSelectedMediaName);
 
-            // Close modal
-            $('#mediaPickerModal').modal('hide');
+                // Display attachment preview bar
+                $('#attachment-preview-container').removeClass('d-none');
+                
+                // Remove required attribute from input field
+                $('.chat-input-field').removeAttr('required');
+
+                // Close modal
+                $('#mediaPickerModal').modal('hide');
+            }
         });
 
         // Dropzone in Modal Upload Pane
