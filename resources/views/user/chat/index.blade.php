@@ -1020,7 +1020,12 @@
                     <div class="chat-active-contact">
                         <div class="chat-avatar" id="active-chat-avatar">-</div>
                         <div>
-                            <h6 class="chat-active-name" id="active-chat-name">Contact</h6>
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="chat-active-name mb-0" id="active-chat-name">Contact</h6>
+                                <button type="button" class="btn btn-link p-0 text-muted d-flex align-items-center justify-content-center" id="active-chat-sync-dp" title="Sync Contact DP" style="line-height: 1; transition: transform 0.2s ease;">
+                                    <i class="bi bi-arrow-repeat" style="font-size: 1.05rem;"></i>
+                                </button>
+                            </div>
                             <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
                                 <span class="chat-active-status" id="active-chat-status">WABA Account</span>
                                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" id="chat-24hr-badge" style="font-size: 0.75rem; border-radius: var(--border-radius-pill); display: none; font-weight: 600;">
@@ -1118,6 +1123,56 @@
             // Clear selected attachment
             $('#clear-attachment-btn').on('click', function() {
                 clearChatAttachment();
+            });
+
+            // Sync active contact DP handler
+            $('#active-chat-sync-dp').on('click', function() {
+                const btn = $(this);
+                btn.css('transform', 'rotate(180deg)');
+                btn.prop('disabled', true);
+                Notiflix.Loading.circle('Syncing display picture...');
+
+                const activeConv = conversationsList.find(c => c.id === activeConversationId);
+                if (!activeConv || !activeConv.contact_id) {
+                    btn.prop('disabled', false).css('transform', 'none');
+                    Notiflix.Loading.remove();
+                    Notiflix.Notify.failure('Cannot resolve active contact.');
+                    return;
+                }
+
+                $.ajax({
+                    url: `/contacts/${activeConv.contact_id}/sync-dp`,
+                    type: "POST",
+                    data: {
+                        _token: "{{ csrf_token() }}"
+                    },
+                    dataType: "json",
+                    success: function(response) {
+                        Notiflix.Loading.remove();
+                        btn.prop('disabled', false).css('transform', 'none');
+                        if (response.status) {
+                            Notiflix.Notify.success(response.message);
+                            const updatedAvatarHtml = `<img src="${response.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                            $('#active-chat-avatar').html(updatedAvatarHtml);
+
+                            activeConv.contact.avatar_url = response.avatar_url.replace(window.location.origin + '/', '');
+                            
+                            const threadItem = $(`.chat-thread-item[data-id="${activeConversationId}"]`);
+                            if (threadItem.length) {
+                                threadItem.find('.chat-avatar').html(updatedAvatarHtml);
+                            }
+                        }
+                    },
+                    error: function(xhr) {
+                        Notiflix.Loading.remove();
+                        btn.prop('disabled', false).css('transform', 'none');
+                        let msg = 'Failed to sync display picture.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        Notiflix.Notify.failure(msg);
+                    }
+                });
             });
         }
 

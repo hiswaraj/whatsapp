@@ -61,6 +61,167 @@
         color: #f59e0b;
     }
 
+    /* Statistics cards styling */
+    .stat-card {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition-normal);
+        height: 100%;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    
+    /* Pulsing status indicators */
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.4);
+    }
+    .pulse-dot.approved {
+        background-color: var(--success-color);
+        animation: pulse-green 2s infinite;
+    }
+    .pulse-dot.pending {
+        background-color: var(--warning-color);
+        animation: pulse-orange 2s infinite;
+    }
+    .pulse-dot.rejected {
+        background-color: var(--danger-color);
+        animation: pulse-red 2s infinite;
+    }
+    
+    @keyframes pulse-green {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    @keyframes pulse-orange {
+        0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* Miniature bubble preview within template cards */
+    .mini-wa-preview {
+        background-color: #efeae2;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='%23e5ddd5' fill-opacity='0.25'%3E%3Cpath fill-rule='evenodd' d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zM11 65c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7z'/%3E%3C/g%3E%3C/svg%3E");
+        border-radius: var(--border-radius-md);
+        padding: 0.75rem;
+        margin: 0.85rem 0;
+        border: 1px solid var(--border-color);
+        max-height: 190px;
+        overflow-y: auto;
+    }
+    [data-theme="dark"] .mini-wa-preview {
+        background-color: #0b141a;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='%231f2c34' fill-opacity='0.15'%3E%3Cpath fill-rule='evenodd' d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7z'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    
+    .mini-bubble {
+        background-color: #ffffff;
+        border-radius: 0 8px 8px 8px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+        padding: 0.45rem 0.6rem;
+        font-size: 0.76rem;
+        line-height: 1.35;
+        color: #111b21;
+        width: 100%;
+        max-width: 100%;
+    }
+    [data-theme="dark"] .mini-bubble {
+        background-color: #1f2c34;
+        color: #e9edef;
+    }
+    
+    .mini-header {
+        font-weight: 700;
+        font-size: 0.72rem;
+        margin-bottom: 0.25rem;
+        color: #111b21;
+    }
+    [data-theme="dark"] .mini-header {
+        color: #f1f5f9;
+    }
+    
+    .mini-media-placeholder {
+        background-color: #f0f2f5;
+        border: 1px dashed #d1d5db;
+        border-radius: 4px;
+        height: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        color: #667781;
+        margin-bottom: 0.3rem;
+    }
+    [data-theme="dark"] .mini-media-placeholder {
+        background-color: #2a3942;
+        border-color: #3b4a54;
+        color: #8696a0;
+    }
+    
+    .mini-body {
+        white-space: pre-wrap;
+    }
+    
+    .mini-footer {
+        font-size: 0.62rem;
+        color: #667781;
+        margin-top: 0.2rem;
+    }
+    [data-theme="dark"] .mini-footer {
+        color: #8696a0;
+    }
+    
+    .mini-btn {
+        background-color: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 6px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        padding: 0.35rem;
+        color: #008069;
+        font-weight: 600;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        width: 100%;
+        margin-top: 2px;
+    }
+    [data-theme="dark"] .mini-btn {
+        background-color: #1f2c34;
+        color: #25d366;
+        border-color: rgba(255,255,255,0.05);
+    }
+
     /* WhatsApp Bubble Simulator & Phone Frame */
     .phone-container {
         width: 300px;
@@ -421,6 +582,69 @@
             </div>
         @endif
 
+        <!-- Statistics Section -->
+        <section class="row g-3 mb-4 fade-in-element">
+            @php
+                $totalTemplates = $templates->count();
+                $approvedTemplates = $templates->where('status', 'APPROVED')->count();
+                $pendingTemplates = $templates->where('status', 'PENDING')->count();
+                $rejectedTemplates = $templates->where('status', 'REJECTED')->count();
+            @endphp
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary-subtle text-primary" style="background-color: rgba(99, 102, 241, 0.12) !important; color: #4f46e5 !important;">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-extrabold" style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary);">{{ $totalTemplates }}</h4>
+                        <span class="text-muted small" style="font-size: 0.75rem;">Total Templates</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success-subtle text-success" style="background-color: rgba(16, 185, 129, 0.12) !important; color: #10b981 !important;">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-extrabold d-flex align-items-center gap-2" style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary);">
+                            {{ $approvedTemplates }}
+                            <span class="pulse-dot approved"></span>
+                        </h4>
+                        <span class="text-muted small" style="font-size: 0.75rem;">Approved</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning-subtle text-warning" style="background-color: rgba(245, 158, 11, 0.12) !important; color: #f59e0b !important;">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-extrabold d-flex align-items-center gap-2" style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary);">
+                            {{ $pendingTemplates }}
+                            <span class="pulse-dot pending"></span>
+                        </h4>
+                        <span class="text-muted small" style="font-size: 0.75rem;">Pending</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-danger-subtle text-danger" style="background-color: rgba(239, 68, 68, 0.12) !important; color: #ef4444 !important;">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-extrabold d-flex align-items-center gap-2" style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary);">
+                            {{ $rejectedTemplates }}
+                            <span class="pulse-dot rejected"></span>
+                        </h4>
+                        <span class="text-muted small" style="font-size: 0.75rem;">Rejected</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Filter bar -->
         <section class="card p-3 border mb-4 fade-in-element" style="border-radius: var(--border-radius-md); background-color: var(--card-background);">
             <form method="GET" action="{{ route('templates.index') }}" id="filter-form">
@@ -491,27 +715,105 @@
                 </div>
             @else
                 @foreach($templates as $template)
+                    @php
+                        $headerText = null;
+                        $headerFormat = null;
+                        $bodyText = null;
+                        $footerText = null;
+                        $buttons = [];
+                        
+                        if (!empty($template->components)) {
+                            foreach ($template->components as $comp) {
+                                if (($comp['type'] ?? '') === 'HEADER') {
+                                    $headerFormat = $comp['format'] ?? null;
+                                    $headerText = $comp['text'] ?? null;
+                                } elseif (($comp['type'] ?? '') === 'BODY') {
+                                    $bodyText = $comp['text'] ?? '';
+                                } elseif (($comp['type'] ?? '') === 'FOOTER') {
+                                    $footerText = $comp['text'] ?? null;
+                                } elseif (($comp['type'] ?? '') === 'BUTTONS') {
+                                    $buttons = $comp['buttons'] ?? [];
+                                }
+                            }
+                        }
+                    @endphp
                     <div class="col-md-6 col-xl-4">
                         <div class="card template-card h-100 p-4 {{ strtolower($template->status) }}">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="fw-bold mb-0 text-truncate" style="max-width: 190px; color: var(--text-primary);" title="{{ $template->name }}">{{ $template->name }}</h5>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="overflow-hidden">
+                                    <h5 class="fw-bold mb-0 text-truncate text-primary" style="max-width: 190px;" title="{{ $template->name }}">{{ $template->name }}</h5>
                                     <span class="text-muted" style="font-size: 0.78rem;">Language: <strong class="text-uppercase">{{ $template->language }}</strong></span>
                                 </div>
-                                <span class="badge category-badge category-{{ strtolower($template->category) }}">
+                                <span class="badge category-badge category-{{ strtolower($template->category) }} d-inline-flex align-items-center gap-1">
+                                    @php
+                                        $catIcon = 'bi-gear';
+                                        if (strtoupper($template->category) === 'MARKETING') $catIcon = 'bi-megaphone';
+                                        elseif (strtoupper($template->category) === 'AUTHENTICATION') $catIcon = 'bi-shield-lock';
+                                    @endphp
+                                    <i class="bi {{ $catIcon }}" style="font-size: 0.72rem;"></i>
                                     {{ $template->category }}
                                 </span>
                             </div>
 
-                            <hr class="my-2 text-muted">
+                            <!-- Mini simulated preview bubble -->
+                            <div class="mini-wa-preview">
+                                <div class="mini-bubble">
+                                    @if($headerFormat)
+                                        @if($headerFormat === 'TEXT')
+                                            <div class="mini-header text-truncate">{{ $headerText }}</div>
+                                        @else
+                                            <div class="mini-media-placeholder">
+                                                @php
+                                                    $icon = 'bi-image';
+                                                    if ($headerFormat === 'VIDEO') $icon = 'bi-play-circle';
+                                                    elseif ($headerFormat === 'DOCUMENT') $icon = 'bi-file-earmark-pdf';
+                                                    elseif ($headerFormat === 'LOCATION') $icon = 'bi-geo-alt';
+                                                @endphp
+                                                <i class="bi {{ $icon }}"></i>
+                                                <span style="font-size: 0.55rem; font-weight: 600;">{{ $headerFormat }}</span>
+                                            </div>
+                                        @endif
+                                    @endif
+                                    
+                                    @if($bodyText)
+                                        <div class="mini-body text-secondary" style="font-size: 0.72rem;">
+                                            {!! preg_replace('/\{\{(\d+)\}\}/', '<span class="wa-var">[$1]</span>', e($bodyText)) !!}
+                                        </div>
+                                    @endif
+                                    
+                                    @if($footerText)
+                                        <div class="mini-footer">{{ $footerText }}</div>
+                                    @endif
+                                </div>
+                                
+                                @if(!empty($buttons))
+                                    <div class="d-flex flex-column gap-1 mt-1">
+                                        @foreach(array_slice($buttons, 0, 3) as $btn)
+                                            @php
+                                                $btnIcon = 'bi-reply';
+                                                if (($btn['type'] ?? '') === 'PHONE_NUMBER') $btnIcon = 'bi-telephone';
+                                                elseif (($btn['type'] ?? '') === 'URL') $btnIcon = 'bi-box-arrow-up-right';
+                                                elseif (($btn['type'] ?? '') === 'COPY_CODE') $btnIcon = 'bi-copy';
+                                            @endphp
+                                            <div class="mini-btn text-truncate">
+                                                <i class="bi {{ $btnIcon }}" style="font-size: 0.65rem;"></i>
+                                                <span>{{ $btn['text'] ?? 'Button' }}</span>
+                                            </div>
+                                        @endforeach
+                                        @if(count($buttons) > 3)
+                                            <div class="text-center text-muted mt-1" style="font-size: 0.6rem;">+{{ count($buttons) - 3 }} more buttons</div>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
 
-                            <div class="mt-2 mb-4">
-                                <div class="text-muted small uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Account</div>
-                                <div style="font-size: 0.88rem; font-weight: 500; color: var(--text-primary);" class="text-truncate">
+                            <div class="mb-3">
+                                <div class="text-muted small uppercase fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">Account</div>
+                                <div style="font-size: 0.82rem; font-weight: 500; color: var(--text-primary);" class="text-truncate">
                                     <i class="bi bi-whatsapp text-success me-1"></i> {{ $template->whatsappAccount->display_name }}
                                 </div>
                                 
-                                <div class="text-muted small uppercase fw-bold mt-2 mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Status</div>
+                                <div class="text-muted small uppercase fw-bold mt-2 mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">Status</div>
                                 <div class="d-flex align-items-center gap-1.5">
                                     @php
                                         $badgeColor = match(strtoupper($template->status)) {
@@ -520,8 +822,17 @@
                                             'REJECTED' => 'bg-danger',
                                             default => 'bg-secondary'
                                         };
+                                        $pulseClass = match(strtoupper($template->status)) {
+                                            'APPROVED' => 'approved',
+                                            'PENDING' => 'pending',
+                                            'REJECTED' => 'rejected',
+                                            default => ''
+                                        };
                                     @endphp
-                                    <span class="badge {{ $badgeColor }} text-uppercase" style="font-size: 0.7rem; border-radius: 4px;">
+                                    <span class="badge {{ $badgeColor }} text-uppercase d-inline-flex align-items-center gap-1.5" style="font-size: 0.68rem; border-radius: 4px;">
+                                        @if($pulseClass)
+                                            <span class="pulse-dot {{ $pulseClass }}" style="width: 6px; height: 6px;"></span>
+                                        @endif
                                         {{ $template->status }}
                                     </span>
                                 </div>

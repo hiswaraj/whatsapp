@@ -180,6 +180,9 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-2">
+                                        <button class="btn btn-sm btn-outline-info sync-contact-dp-btn d-inline-flex align-items-center gap-1" data-id="{{ $contact->id }}" title="Sync Display Picture">
+                                            <i class="bi bi-arrow-repeat"></i> Sync DP
+                                        </button>
                                         <a href="{{ route('chat.start-contact', $contact->id) }}" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1" style="border-radius: var(--border-radius-sm);">
                                             <i class="bi bi-chat-text"></i> Chat
                                         </a>
@@ -469,6 +472,42 @@
                 error: function(xhr) {
                     Notiflix.Loading.remove();
                     let msg = 'Failed to update contact.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Notiflix.Notify.failure(msg);
+                }
+            });
+        });
+
+        // Sync Contact DP
+        $(document).on('click', '.sync-contact-dp-btn', function() {
+            const id = $(this).data('id');
+            const btn = $(this);
+            const originalHtml = btn.html();
+            
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Syncing...');
+            Notiflix.Loading.circle('Syncing display picture...');
+
+            $.ajax({
+                url: `/contacts/${id}/sync-dp`,
+                type: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                dataType: "json",
+                success: function(response) {
+                    Notiflix.Loading.remove();
+                    btn.prop('disabled', false).html(originalHtml);
+                    if (response.status) {
+                        Notiflix.Notify.success(response.message);
+                        window.location.reload();
+                    }
+                },
+                error: function(xhr) {
+                    Notiflix.Loading.remove();
+                    btn.prop('disabled', false).html(originalHtml);
+                    let msg = 'Failed to sync display picture.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         msg = xhr.responseJSON.message;
                     }

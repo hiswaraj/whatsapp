@@ -31,6 +31,7 @@ Route::namespace('App\\Http\\Controllers')->group(function () {
         Route::delete('/contacts/{id}', 'ContactController@destroy')->name('contacts.destroy');
         Route::post('/contacts/import', 'ContactController@import')->name('contacts.import');
         Route::get('/contacts/export', 'ContactController@export')->name('contacts.export');
+        Route::post('/contacts/{id}/sync-dp', 'ContactController@syncDp')->name('contacts.sync-dp');
 
         // Contact Groups
         Route::get('/groups', 'ContactGroupController@index')->name('groups.index');
