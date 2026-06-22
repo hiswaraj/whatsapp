@@ -792,6 +792,10 @@
                         <i class="bi bi-plus-lg text-white" style="font-size: 1rem; color: #ffffff !important;"></i> Start Chat
                     </button>
                 </div>
+            </form>
+        </div>
+    </div>
+</div>
 <!-- Media Picker Modal -->
 <div class="modal fade" id="mediaPickerModal" tabindex="-1" aria-labelledby="mediaPickerModalLabel" aria-hidden="true" style="z-index: 2050;">
     <div class="modal-dialog modal-lg modal-dialog-centered">
