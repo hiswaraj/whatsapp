@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -255,7 +256,7 @@ class CampaignController extends Controller
     {
         $userId = Auth::id();
         $campaign = Campaign::where('user_id', $userId)->findOrFail($id);
-        
+
         return Excel::download(new CampaignLogsExport($campaign->id), 'broadcast_logs_' . $campaign->id . '.csv');
     }
 }
