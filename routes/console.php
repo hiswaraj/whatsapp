@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('campaigns:process')->everyMinute()->withoutOverlapping();
+Schedule::command('campaigns:process')->everyMinute();
