@@ -421,11 +421,15 @@ class QuickBroadcastController extends Controller
             // Cleanup the uploaded temp file
             Storage::delete($validated['filepath']);
 
-            // Trigger campaign queue processor
+            // Trigger campaign queue processor immediately
             try {
-                Artisan::queue('campaigns:process');
+                Artisan::call('campaigns:process');
             } catch (Exception $e) {
-                // Fail-safe
+                try {
+                    Artisan::queue('campaigns:process');
+                } catch (Exception $ex) {
+                    Log::warning('Quick broadcast dispatch warning: ' . $ex->getMessage());
+                }
             }
 
             return response()->json([

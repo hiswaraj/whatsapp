@@ -121,12 +121,16 @@ class CampaignController extends Controller
             'failed_count' => 0
         ]);
 
-        // If starting immediately, trigger Artisan process command instantly in background
+        // If starting immediately, trigger Artisan process command instantly
         if ($status === 'processing') {
             try {
-                Artisan::queue('campaigns:process');
+                Artisan::call('campaigns:process');
             } catch (\Exception $e) {
-                // Fail-safe if queue is not configured
+                try {
+                    Artisan::queue('campaigns:process');
+                } catch (\Exception $ex) {
+                    Log::warning('Campaign dispatch warning: ' . $ex->getMessage());
+                }
             }
         }
 
