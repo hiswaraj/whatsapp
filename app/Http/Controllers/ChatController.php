@@ -448,22 +448,16 @@ class ChatController extends Controller
         if ($validated['type'] === 'existing') {
             $contactId = $validated['contact_id'];
         } else {
-            // Normalizing/cleaning the number format
-            $mobile = preg_replace('/[^0-9+]/', '', $validated['mobile_number']);
-            if (!str_starts_with($mobile, '+')) {
-                $mobile = '+' . $mobile;
-            }
+            $normalizedMobile = \App\Models\Contact::normalizePhoneNumber($validated['mobile_number']);
 
-            // Check if contact already exists
-            $contact = \App\Models\Contact::where('user_id', $userId)
-                ->where('mobile_number', $mobile)
-                ->first();
+            // Check if contact already exists using flexible lookup
+            $contact = \App\Models\Contact::findByMobile($userId, $validated['mobile_number']);
 
             if (!$contact) {
                 $contact = \App\Models\Contact::create([
                     'user_id' => $userId,
-                    'name' => $validated['name'] ?: $mobile,
-                    'mobile_number' => $mobile
+                    'name' => $validated['name'] ?: $normalizedMobile,
+                    'mobile_number' => $normalizedMobile
                 ]);
             }
             $contactId = $contact->id;

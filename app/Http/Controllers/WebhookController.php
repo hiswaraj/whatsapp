@@ -137,12 +137,10 @@ class WebhookController extends Controller
             }
 
             // Clean number
-            $fromCleaned = '+' . preg_replace('/[^0-9]/', '', $from);
+            $fromCleaned = \App\Models\Contact::normalizePhoneNumber($from);
 
-            // Find or create Contact
-            $contact = \App\Models\Contact::where('user_id', $userId)
-                ->where('mobile_number', $fromCleaned)
-                ->first();
+            // Find or create Contact using flexible phone number matching
+            $contact = \App\Models\Contact::findByMobile($userId, $from);
 
             if (!$contact) {
                 $contact = \App\Models\Contact::create([
@@ -150,41 +148,14 @@ class WebhookController extends Controller
                     'name' => $profileName,
                     'mobile_number' => $fromCleaned
                 ]);
-
-                // Auto-sync realistic avatar DP for new contact
-                try {
-                    $mockUrls = [
-                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1488161628813-04466f872be2?auto=format&fit=crop&w=150&q=80",
-                        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=80"
-                    ];
-                    $selectedUrl = $mockUrls[$contact->id % count($mockUrls)];
-                    $destinationPath = public_path('uploads/contact_avatars');
-                    if (!\Illuminate\Support\Facades\File::exists($destinationPath)) {
-                        \Illuminate\Support\Facades\File::makeDirectory($destinationPath, 0755, true);
-                    }
-                    $imgResponse = \Illuminate\Support\Facades\Http::timeout(5)->get($selectedUrl);
-                    if ($imgResponse->successful()) {
-                        $filename = "contact_avatar_sync_{$contact->id}.jpg";
-                        \Illuminate\Support\Facades\File::put($destinationPath . '/' . $filename, $imgResponse->body());
-                        $contact->avatar_url = 'uploads/contact_avatars/' . $filename;
-                        $contact->save();
-                    }
-                } catch (\Exception $e) {
-                    Log::warning('Webhook Contact DP Sync failed: ' . $e->getMessage());
+            } else {
+                // Update contact name if previous name was just the phone number or generic and Meta provides a real name
+                if (($contact->name === $contact->mobile_number || $contact->name === $from || $contact->name === 'Guest') && !empty($profileName) && $profileName !== 'Guest') {
+                    $contact->name = $profileName;
                 }
+                // Normalize stored mobile number to clean standard format
+                $contact->mobile_number = $fromCleaned;
+                $contact->save();
             }
 
             // Find or create Conversation

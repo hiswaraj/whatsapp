@@ -64,15 +64,15 @@ class ContactController extends Controller
 
         $validated = $validation->validated();
 
-        // Check duplicate phone number for this tenant
-        $exists = Contact::where('user_id', $userId)
-            ->where('mobile_number', $validated['mobile_number'])
-            ->exists();
+        $normalizedMobile = Contact::normalizePhoneNumber($validated['mobile_number']);
 
-        if ($exists) {
+        // Check duplicate phone number for this tenant using flexible matching
+        $existing = Contact::findByMobile($userId, $validated['mobile_number']);
+
+        if ($existing) {
             return response()->json([
                 'status' => false,
-                'message' => 'A contact with this mobile number already exists.'
+                'message' => 'A contact with this mobile number already exists (' . $existing->name . ').'
             ], 422);
         }
 
@@ -101,7 +101,7 @@ class ContactController extends Controller
         $contact = Contact::create([
             'user_id' => $userId,
             'name' => $validated['name'],
-            'mobile_number' => $validated['mobile_number'],
+            'mobile_number' => $normalizedMobile,
             'email' => $validated['email'],
             'tags' => $tags,
             'notes' => $validated['notes'],
@@ -147,16 +147,15 @@ class ContactController extends Controller
 
         $validated = $validation->validated();
 
-        // Check duplicate phone number for this tenant (excluding current contact)
-        $exists = Contact::where('user_id', $userId)
-            ->where('mobile_number', $validated['mobile_number'])
-            ->where('id', '!=', $id)
-            ->exists();
+        $normalizedMobile = Contact::normalizePhoneNumber($validated['mobile_number']);
 
-        if ($exists) {
+        // Check duplicate phone number for this tenant (excluding current contact)
+        $existing = Contact::findByMobile($userId, $validated['mobile_number']);
+
+        if ($existing && $existing->id != $id) {
             return response()->json([
                 'status' => false,
-                'message' => 'Another contact with this mobile number already exists.'
+                'message' => 'Another contact with this mobile number already exists (' . $existing->name . ').'
             ], 422);
         }
 
@@ -171,7 +170,7 @@ class ContactController extends Controller
             $file = $request->file('avatar');
             $extension = $file->getClientOriginalExtension();
 
-            if ($contact->avatar_url) {
+            if ($contact->avatar_url && !str_contains($contact->avatar_url, 'contact_avatar_sync_')) {
                 $oldPath = public_path($contact->avatar_url);
                 if (file_exists($oldPath)) {
                     @unlink($oldPath);
@@ -191,7 +190,7 @@ class ContactController extends Controller
 
         $contact->update([
             'name' => $validated['name'],
-            'mobile_number' => $validated['mobile_number'],
+            'mobile_number' => $normalizedMobile,
             'email' => $validated['email'],
             'tags' => $tags,
             'notes' => $validated['notes'],
@@ -275,60 +274,32 @@ class ContactController extends Controller
         $userId = Auth::id();
         $contact = Contact::where('user_id', $userId)->findOrFail($id);
 
-        $mockUrls = [
-            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1488161628813-04466f872be2?auto=format&fit=crop&w=150&q=80",
-            "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=80"
-        ];
-
-        $selectedUrl = $mockUrls[$contact->id % count($mockUrls)];
-
-        $destinationPath = public_path('uploads/contact_avatars');
-        if (!\Illuminate\Support\Facades\File::exists($destinationPath)) {
-            \Illuminate\Support\Facades\File::makeDirectory($destinationPath, 0755, true);
+        // If contact has a custom uploaded avatar, return it directly
+        if ($contact->avatar_url && !str_contains($contact->avatar_url, 'contact_avatar_sync_')) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Contact display picture synced!',
+                'avatar_url' => asset($contact->avatar_url)
+            ]);
         }
 
-        try {
-            $imgResponse = \Illuminate\Support\Facades\Http::timeout(10)->get($selectedUrl);
-            if ($imgResponse->successful()) {
-                if ($contact->avatar_url) {
-                    $oldPath = public_path($contact->avatar_url);
-                    if (file_exists($oldPath)) {
-                        @unlink($oldPath);
-                    }
-                }
-
-                $filename = "contact_avatar_sync_{$contact->id}.jpg";
-                \Illuminate\Support\Facades\File::put($destinationPath . '/' . $filename, $imgResponse->body());
-
-                $contact->avatar_url = 'uploads/contact_avatars/' . $filename;
-                $contact->save();
-
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Contact display picture synced successfully!',
-                    'avatar_url' => asset($contact->avatar_url)
-                ]);
+        // Clean any old dummy Unsplash avatar path
+        if ($contact->avatar_url && str_contains($contact->avatar_url, 'contact_avatar_sync_')) {
+            $oldPath = public_path($contact->avatar_url);
+            if (file_exists($oldPath)) {
+                @unlink($oldPath);
             }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to sync contact DP: ' . $e->getMessage());
+            $contact->avatar_url = null;
+            $contact->save();
         }
+
+        // Generate clean initial avatar URL for this contact name
+        $initialAvatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($contact->name) . '&background=6366f1&color=fff&size=200&bold=true';
 
         return response()->json([
-            'status' => false,
-            'message' => 'Failed to sync display picture due to connection error.'
-        ], 500);
+            'status' => true,
+            'message' => 'Contact display picture synced with clean avatar!',
+            'avatar_url' => $initialAvatarUrl
+        ]);
     }
 }

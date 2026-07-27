@@ -50,15 +50,12 @@ class ContactsImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            // Normalize mobile number: keep digits and +
-            $mobileNumber = preg_replace('/[^0-9+]/', '', $mobileNumber);
+            $normalizedNumber = Contact::normalizePhoneNumber($mobileNumber);
 
-            // Deduplicate per tenant
-            $exists = Contact::where('user_id', $userId)
-                ->where('mobile_number', $mobileNumber)
-                ->exists();
+            // Deduplicate per tenant using flexible phone number matching
+            $existing = Contact::findByMobile($userId, $mobileNumber);
 
-            if ($exists) {
+            if ($existing) {
                 $this->skipped++;
                 continue;
             }
@@ -75,7 +72,7 @@ class ContactsImport implements ToCollection, WithHeadingRow
             Contact::create([
                 'user_id' => $userId,
                 'name' => $name,
-                'mobile_number' => $mobileNumber,
+                'mobile_number' => $normalizedNumber,
                 'email' => empty($email) ? null : $email,
                 'tags' => $tags,
                 'notes' => empty($notes) ? null : $notes,
