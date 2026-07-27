@@ -17,10 +17,10 @@ class DatabaseSeeder extends Seeder
     {
         // Seed Admin User
         User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@ipromind.com'],
             [
-                'name' => 'Admin User',
-                'password' => bcrypt('password'),
+                'name' => 'iPromind Admin',
+                'password' => bcrypt('iPromind@9547'),
                 'user_type' => 'admin',
                 'status' => 1,
                 'email_verified_at' => now(),
@@ -29,10 +29,10 @@ class DatabaseSeeder extends Seeder
 
         // Seed Standard User
         User::updateOrCreate(
-            ['email' => 'user@example.com'],
+            ['email' => 'ramkrishna@ipromind.com'],
             [
-                'name' => 'Standard User',
-                'password' => bcrypt('password'),
+                'name' => 'Ramkrishna Maity',
+                'password' => bcrypt('iPromind@9547'),
                 'user_type' => 'user',
                 'status' => 1,
                 'email_verified_at' => now(),
