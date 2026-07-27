@@ -51,9 +51,6 @@ class WebhookController extends Controller
         $waba = null;
         if ($verify_token) {
             $waba = WhatsappAccount::where('verify_token', $verify_token)->first();
-            if (!$waba) {
-                return response()->json(['status' => 'error', 'message' => 'Invalid webhook token.'], 404);
-            }
         }
 
         $payload = $request->all();
@@ -114,18 +111,15 @@ class WebhookController extends Controller
         }
 
         try {
-            if (!$waba) {
-                // Find WABA account matching phone_number_id
-                $waba = WhatsappAccount::where('phone_number_id', $phoneNumberId)->first();
+            if (!$waba || $waba->phone_number_id !== $phoneNumberId) {
+                $wabaByPhone = WhatsappAccount::where('phone_number_id', $phoneNumberId)->first();
+                if ($wabaByPhone) {
+                    $waba = $wabaByPhone;
+                }
             }
 
             if (!$waba) {
-                return;
-            }
-
-            // Verify WABA matches phone_number_id from payload
-            if ($waba->phone_number_id !== $phoneNumberId) {
-                Log::warning("Webhook phone_number_id mismatch. WABA: {$waba->id}, Payload: {$phoneNumberId}");
+                Log::warning("Webhook incoming message ignored: No WABA found matching Phone Number ID {$phoneNumberId}");
                 return;
             }
 
