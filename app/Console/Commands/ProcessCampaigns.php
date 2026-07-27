@@ -208,6 +208,16 @@ class ProcessCampaigns extends Command
                     sleep(1);
                 }
 
+                // Check if any pending messages remain for this quick broadcast
+                $hasPending = Message::where('campaign_id', $campaign->id)
+                    ->where('status', 'pending')
+                    ->exists();
+
+                if (!$hasPending) {
+                    $campaign->update(['status' => 'completed']);
+                    $this->info("Quick Broadcast '{$campaign->name}' completed! All messages sent.");
+                }
+
                 continue; // Move to the next campaign in loop
             }
 
@@ -404,6 +414,13 @@ class ProcessCampaigns extends Command
 
                 // Short sleep delay to control broadcast rate
                 sleep(1);
+            }
+
+            // Check if group campaign has finished all contacts
+            $freshCamp = $campaign->fresh();
+            if (($freshCamp->sent_count + $freshCamp->failed_count) >= $freshCamp->total_contacts) {
+                $campaign->update(['status' => 'completed']);
+                $this->info("Campaign '{$campaign->name}' completed! All messages sent.");
             }
         }
 
