@@ -44,7 +44,7 @@ class MediaLibraryController extends Controller
         $userId = Auth::id();
         
         $validator = Validator::make($request->all(), [
-            'file' => 'required|file|max:16384|mimes:jpeg,jpg,png,gif,webp,mp4,mp3,wav,ogg,pdf,doc,docx,xls,xlsx,txt'
+            'file' => 'required|file|max:16384|mimes:jpeg,jpg,png,gif,webp,mp4,mp3,wav,ogg,webm,m4a,pdf,doc,docx,xls,xlsx,txt'
         ]);
 
         if ($validator->fails()) {
@@ -68,7 +68,7 @@ class MediaLibraryController extends Controller
             $fileType = 'image';
         } elseif (str_starts_with($mime, 'video/')) {
             $fileType = 'video';
-        } elseif (str_starts_with($mime, 'audio/')) {
+        } elseif (str_starts_with($mime, 'audio/') || str_contains($mime, 'webm') || str_contains($mime, 'ogg') || str_contains($mime, 'mp4')) {
             $fileType = 'audio';
         }
 
