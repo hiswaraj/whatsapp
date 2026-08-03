@@ -29,6 +29,20 @@
         border-bottom: 1px solid var(--border-color);
     }
     
+    @keyframes pulse-recording {
+        0% { transform: scale(0.9); opacity: 0.7; }
+        50% { transform: scale(1.2); opacity: 1; }
+        100% { transform: scale(0.9); opacity: 0.7; }
+    }
+    .recording-pulse-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #dc3545;
+        display: inline-block;
+        animation: pulse-recording 1.2s infinite ease-in-out;
+    }
+    
     .chat-search-wrapper .input-group-text {
         background-color: var(--background-color) !important;
         border-color: var(--border-color) !important;
@@ -1062,7 +1076,10 @@
                         <button type="button" class="chat-action-trigger btn-attach btn btn-outline-secondary d-flex align-items-center justify-content-center p-0" id="chat-attachment-btn" title="Attach File" style="width: 38px; height: 38px; border-radius: var(--border-radius-md); border-color: var(--border-color); flex-shrink: 0; background: transparent; color: var(--text-secondary);">
                             <i class="bi bi-paperclip" style="font-size: 1.25rem;"></i>
                         </button>
-                        <div class="position-relative flex-grow-1 d-flex flex-column">
+                        <button type="button" class="chat-action-trigger btn btn-outline-secondary d-flex align-items-center justify-content-center p-0" id="chat-mic-btn" title="Record Voice Note" style="width: 38px; height: 38px; border-radius: var(--border-radius-md); border-color: var(--border-color); flex-shrink: 0; background: transparent; color: var(--text-secondary);">
+                            <i class="bi bi-mic-fill" style="font-size: 1.1rem;"></i>
+                        </button>
+                        <div class="position-relative flex-grow-1 d-flex flex-column" id="chat-input-wrapper">
                             <!-- Attachment Preview Bar -->
                             <div class="attachment-preview-bar d-none w-100" id="attachment-preview-container">
                                 <div class="d-flex align-items-center justify-content-between p-2 mb-2 border rounded" style="border-radius: var(--border-radius-md); background-color: var(--background-color);">
@@ -1075,7 +1092,25 @@
                             </div>
                             <textarea name="body" class="chat-input-field w-100" rows="1" placeholder="Type a message..." required style="resize: none;"></textarea>
                         </div>
-                        <button type="submit" class="chat-action-trigger btn-send" title="Send Message">
+
+                        <!-- Live Voice Recording UI Bar (Hidden by Default) -->
+                        <div class="recording-bar d-none flex-grow-1 align-items-center justify-content-between px-3 py-1 border rounded bg-light-subtle" id="recording-bar" style="height: 42px; border-radius: var(--border-radius-md);">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="recording-pulse-dot"></span>
+                                <span class="fw-bold text-danger small" id="recording-time">00:00</span>
+                                <span class="text-muted small ms-1 d-none d-sm-inline">Recording voice note...</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 py-1 px-2" id="cancel-recording-btn" title="Cancel Recording">
+                                    <i class="bi bi-trash3-fill"></i> <span class="d-none d-sm-inline">Cancel</span>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success d-flex align-items-center gap-1 py-1 px-2" id="send-recording-btn" title="Send Voice Note">
+                                    <i class="bi bi-send-fill"></i> <span class="d-none d-sm-inline">Send Voice</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="chat-action-trigger btn-send" id="chat-send-btn" title="Send Message">
                             <i class="bi bi-send-fill" style="font-size:1.1rem;"></i>
                         </button>
                     </div>
@@ -1477,6 +1512,164 @@
                     
                     // Restore body text on fail
                     textarea.val(body);
+                }
+            });
+        }
+
+        // --- Live Voice Recording Engine ---
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingTimer = null;
+        let recordingSeconds = 0;
+        let audioStream = null;
+
+        $(document).on('click', '#chat-mic-btn', function() {
+            if ($(this).prop('disabled')) return;
+            startVoiceRecording();
+        });
+
+        $(document).on('click', '#cancel-recording-btn', function() {
+            stopVoiceRecording(false);
+        });
+
+        $(document).on('click', '#send-recording-btn', function() {
+            stopVoiceRecording(true);
+        });
+
+        function startVoiceRecording() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                Notiflix.Notify.failure('Audio recording is not supported in your browser.');
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    audioStream = stream;
+                    audioChunks = [];
+                    
+                    let mimeType = 'audio/webm';
+                    if (MediaRecorder.isTypeSupported('audio/webm')) {
+                        mimeType = 'audio/webm';
+                    } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                        mimeType = 'audio/ogg';
+                    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                        mimeType = 'audio/mp4';
+                    }
+
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+
+                    mediaRecorder.ondataavailable = function(e) {
+                        if (e.data && e.data.size > 0) {
+                            audioChunks.push(e.data);
+                        }
+                    };
+
+                    mediaRecorder.start(100);
+
+                    // UI changes
+                    $('#chat-attachment-btn, #chat-mic-btn, #chat-send-btn').addClass('d-none');
+                    $('#chat-input-wrapper').addClass('d-none');
+                    $('#recording-bar').removeClass('d-none').addClass('d-flex');
+
+                    recordingSeconds = 0;
+                    updateRecordingTime();
+                    recordingTimer = setInterval(function() {
+                        recordingSeconds++;
+                        updateRecordingTime();
+                    }, 1000);
+                })
+                .catch(function(err) {
+                    console.error('Microphone access error:', err);
+                    Notiflix.Notify.failure('Microphone access denied or unavailable.');
+                });
+        }
+
+        function updateRecordingTime() {
+            const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+            const secs = String(recordingSeconds % 60).padStart(2, '0');
+            $('#recording-time').text(`${mins}:${secs}`);
+        }
+
+        function stopVoiceRecording(shouldSend) {
+            if (!mediaRecorder) return;
+
+            clearInterval(recordingTimer);
+            recordingTimer = null;
+
+            mediaRecorder.onstop = function() {
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => track.stop());
+                    audioStream = null;
+                }
+
+                if (shouldSend && audioChunks.length > 0) {
+                    const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                    const audioBlob = new Blob(audioChunks, { type: mimeType });
+                    uploadAndSendVoiceNote(audioBlob, mimeType);
+                } else {
+                    resetRecordingUI();
+                }
+            };
+
+            if (mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function resetRecordingUI() {
+            $('#recording-bar').addClass('d-none').removeClass('d-flex');
+            $('#chat-attachment-btn, #chat-mic-btn, #chat-send-btn').removeClass('d-none');
+            $('#chat-input-wrapper').removeClass('d-none');
+            $('#recording-time').text('00:00');
+            audioChunks = [];
+            mediaRecorder = null;
+        }
+
+        function uploadAndSendVoiceNote(blob, mimeType) {
+            Notiflix.Loading.circle('Uploading voice note...');
+
+            let ext = 'webm';
+            if (mimeType.includes('ogg')) ext = 'ogg';
+            else if (mimeType.includes('mp4') || mimeType.includes('m4a')) ext = 'm4a';
+            else if (mimeType.includes('wav')) ext = 'wav';
+
+            const filename = `voice_note_${Date.now()}.${ext}`;
+            const file = new File([blob], filename, { type: mimeType });
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('_token', '{{ csrf_token() }}');
+
+            $.ajax({
+                url: "{{ route('media.store') }}",
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.status && response.media) {
+                        Notiflix.Loading.remove();
+                        resetRecordingUI();
+                        
+                        $('#chat-msg-type').val('audio');
+                        $('#chat-media-id').val(response.media.id);
+                        $('.chat-input-field').removeAttr('required');
+
+                        sendTextMessage();
+                    } else {
+                        Notiflix.Loading.remove();
+                        resetRecordingUI();
+                        Notiflix.Notify.failure('Failed to upload voice note.');
+                    }
+                },
+                error: function(xhr) {
+                    Notiflix.Loading.remove();
+                    resetRecordingUI();
+                    let msg = 'Failed to upload voice note.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Notiflix.Notify.failure(msg);
                 }
             });
         }
