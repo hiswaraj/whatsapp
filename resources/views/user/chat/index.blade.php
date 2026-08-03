@@ -1412,7 +1412,7 @@
                     }
                     
                     messageBody = mediaHtml;
-                    if (msg.message_type === 'template' && msg.body) {
+                    if (msg.body) {
                         let textBody = $('<div>').text(msg.body).html().replace(/\n/g, '<br>');
                         messageBody += `<div class="mt-2 text-wrap">${textBody}</div>`;
                     }

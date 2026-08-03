@@ -132,8 +132,9 @@ class ChatController extends Controller
 
         $validation = Validator::make($request->all(), [
             'conversation_id' => 'required|exists:conversations,id,user_id,' . $userId,
-            'message_type' => 'required|string|in:text,template',
+            'message_type' => 'required|string|in:text,template,image,video,audio,document',
             'body' => 'required_if:message_type,text|nullable|string',
+            'media_id' => 'required_if:message_type,image,video,audio,document|nullable|exists:media_library,id,user_id,' . $userId,
             'template_id' => 'required_if:message_type,template|nullable|exists:templates,id,user_id,' . $userId,
             'template_variables' => 'nullable|array',
             'header_media_id' => 'nullable|exists:media_library,id,user_id,' . $userId,
@@ -262,6 +263,35 @@ class ChatController extends Controller
                     'components' => $componentsPayload
                 ]
             ];
+        } elseif (in_array($messageType, ['image', 'video', 'audio', 'document'])) {
+            $media = \App\Models\MediaLibrary::where('user_id', $userId)->findOrFail($validated['media_id']);
+            $mediaPath = $media->file_path;
+            $mediaUrl = asset($mediaPath);
+            if ($isMock) {
+                $mediaUrl = $mediaPath;
+            }
+
+            $bodyText = $validated['body'] ?? '';
+
+            $mediaPayload = [
+                'link' => $mediaUrl
+            ];
+
+            if (!empty($bodyText) && in_array($messageType, ['image', 'video', 'document'])) {
+                $mediaPayload['caption'] = $bodyText;
+            }
+
+            if ($messageType === 'document' && !empty($media->filename)) {
+                $mediaPayload['filename'] = $media->filename;
+            }
+
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
+                'to' => $contact->mobile_number,
+                'type' => $messageType,
+                $messageType => $mediaPayload
+            ];
         } else {
             $bodyText = $validated['body'];
             
@@ -301,7 +331,7 @@ class ChatController extends Controller
 
             // Simulate incoming response 1 second in the future
             // Emulate customer typing the same message to test flows natively
-            $simulatedBody = $bodyText;
+            $simulatedBody = $bodyText ?: ('Received ' . $messageType);
 
             Message::create([
                 'user_id' => $userId,
