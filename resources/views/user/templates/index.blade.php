@@ -1587,7 +1587,7 @@
                         text: hText
                     };
                     if (hText.includes('{{1}}')) {
-                        headerObj.example = { header_text: ['Example Header'] };
+                        headerObj.example = { header_text: [['Example Header']] };
                     }
                     components.push(headerObj);
                 } else {
