@@ -1613,7 +1613,7 @@
             const matches = bodyText.match(/\{\{(\d+)\}\}/g);
             if (matches) {
                 const uniqueMatches = [...new Set(matches)];
-                const bodyExamples = uniqueMatches.map((val, idx) => `Sample${idx + 1}`);
+                const bodyExamples = uniqueMatches.map((val, idx) => `Sample ${idx + 1}`);
                 bodyObj.example = { body_text: [bodyExamples] };
             }
             components.push(bodyObj);
@@ -1631,25 +1631,63 @@
             const buttonType = $('#button_type').val();
             const categoryVal = $('#category_select').val();
 
-            if (buttonType === 'QUICK_REPLY') {
-                const buttons = [];
-                $('.quick-reply-input').each(function() {
-                    const val = $(this).val().trim();
-                    if (val) {
-                        const btnObj = {
-                            type: 'QUICK_REPLY',
-                            text: val
-                        };
-                        buttons.push(btnObj);
-                    }
-                });
-                if (buttons.length > 0) {
-                    components.push({
-                        type: 'BUTTONS',
-                        buttons: buttons
+            if (categoryVal === 'AUTHENTICATION') {
+                if (buttonType === 'QUICK_REPLY') {
+                    const buttons = [];
+                    $('.quick-reply-input').each(function() {
+                        const val = $(this).val().trim();
+                        if (val) {
+                            buttons.push({
+                                type: 'QUICK_REPLY',
+                                text: val
+                            });
+                        }
                     });
+                    if (buttons.length > 0) {
+                        components.push({
+                            type: 'BUTTONS',
+                            buttons: buttons
+                        });
+                    }
+                } else if (buttonType === 'CTA') {
+                    const buttons = [];
+                    if ($('#cta_code_enable').is(':checked')) {
+                        const btnText = $('#cta_code_text').val().trim();
+                        const btnVal = $('#cta_code_value').val().trim();
+                        if (btnText && btnVal) {
+                            buttons.push({
+                                type: 'OTP',
+                                otp_type: 'COPY_CODE',
+                                text: btnText
+                            });
+                        }
+                    }
+                    if (buttons.length > 0) {
+                        components.push({
+                            type: 'BUTTONS',
+                            buttons: buttons
+                        });
+                    }
                 }
-            } else if (buttonType === 'CTA') {
+            } else {
+                if (buttonType === 'QUICK_REPLY') {
+                    const buttons = [];
+                    $('.quick-reply-input').each(function() {
+                        const val = $(this).val().trim();
+                        if (val) {
+                            buttons.push({
+                                type: 'QUICK_REPLY',
+                                text: val
+                            });
+                        }
+                    });
+                    if (buttons.length > 0) {
+                        components.push({
+                            type: 'BUTTONS',
+                            buttons: buttons
+                        });
+                    }
+                } else if (buttonType === 'CTA') {
                 const buttons = [];
                 
                 if ($('#cta_phone_enable').is(':checked')) {
@@ -1706,6 +1744,7 @@
                     });
                 }
             }
+        }
 
             Notiflix.Loading.circle('Creating template...');
 
