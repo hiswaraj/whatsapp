@@ -1613,7 +1613,7 @@
             const matches = bodyText.match(/\{\{(\d+)\}\}/g);
             if (matches) {
                 const uniqueMatches = [...new Set(matches)];
-                const bodyExamples = uniqueMatches.map((val, idx) => `Sample ${idx + 1}`);
+                const bodyExamples = uniqueMatches.map((val, idx) => `Sample${idx + 1}`);
                 bodyObj.example = { body_text: [bodyExamples] };
             }
             components.push(bodyObj);
@@ -1629,15 +1629,18 @@
 
             // Buttons
             const buttonType = $('#button_type').val();
+            const categoryVal = $('#category_select').val();
+
             if (buttonType === 'QUICK_REPLY') {
                 const buttons = [];
                 $('.quick-reply-input').each(function() {
                     const val = $(this).val().trim();
                     if (val) {
-                        buttons.push({
+                        const btnObj = {
                             type: 'QUICK_REPLY',
                             text: val
-                        });
+                        };
+                        buttons.push(btnObj);
                     }
                 });
                 if (buttons.length > 0) {

@@ -155,10 +155,18 @@ class TemplateController extends Controller
                     'template' => $template
                 ]);
             } else {
-                $err = $response->json('error.message') ?? 'Unknown error occurred from Meta Cloud API.';
+                $errObj = $response->json('error') ?? [];
+                $err = $errObj['message'] ?? 'Unknown error occurred from Meta Cloud API.';
+                Log::error('Meta Template API Error Details: ', [
+                    'payload' => $payload,
+                    'status' => $response->status(),
+                    'error_response' => $response->json()
+                ]);
+                
+                $detailMsg = isset($errObj['error_data']['details']) ? ' (Details: ' . $errObj['error_data']['details'] . ')' : '';
                 return response()->json([
                     'status' => false,
-                    'message' => 'Meta API Error: ' . $err
+                    'message' => 'Meta API Error: ' . $err . $detailMsg
                 ], 400);
             }
         } catch (Exception $e) {
