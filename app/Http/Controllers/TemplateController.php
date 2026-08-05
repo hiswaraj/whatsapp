@@ -105,6 +105,29 @@ class TemplateController extends Controller
             'components' => $validated['components']
         ];
 
+        // Meta Graph API Requirement for AUTHENTICATION category templates:
+        // - Must have BODY with add_security_recommendation and exactly one OTP type button.
+        // - Cannot have FOOTER, custom BODY text, or QUICK_REPLY/PHONE/URL buttons.
+        // - If template contains custom text/buttons, set category to UTILITY so Meta accepts it smoothly.
+        $hasCustomTextOrQuickReply = false;
+        foreach ($validated['components'] as $comp) {
+            if (($comp['type'] ?? '') === 'FOOTER') {
+                $hasCustomTextOrQuickReply = true;
+            }
+            if (($comp['type'] ?? '') === 'BUTTONS') {
+                foreach ($comp['buttons'] ?? [] as $b) {
+                    if (($b['type'] ?? '') !== 'OTP') {
+                        $hasCustomTextOrQuickReply = true;
+                    }
+                }
+            }
+        }
+
+        if ($validated['category'] === 'AUTHENTICATION' && $hasCustomTextOrQuickReply) {
+            // Change category to UTILITY so Meta accepts custom verification layout/text/buttons
+            $payload['category'] = 'UTILITY';
+        }
+
         if ($isMock) {
             // Mock API Response
             usleep(800000); // simulation delay
