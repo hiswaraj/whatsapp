@@ -82,6 +82,7 @@ Route::namespace('App\\Http\\Controllers')->group(function () {
         Route::post('/campaigns', 'CampaignController@store')->name('campaigns.store');
         Route::get('/campaigns/{id}', 'CampaignController@show')->name('campaigns.show');
         Route::post('/campaigns/{id}/action', 'CampaignController@action')->name('campaigns.action');
+        Route::post('/campaigns/resend-message/{messageId}', 'CampaignController@resendSingleMessage')->name('campaigns.resend-message');
         Route::delete('/campaigns/{id}', 'CampaignController@destroy')->name('campaigns.destroy');
         Route::get('/campaigns/{id}/export', 'CampaignController@exportLogs')->name('campaigns.export-logs');
 

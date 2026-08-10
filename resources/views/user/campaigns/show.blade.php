@@ -178,7 +178,8 @@
                                     <th class="py-3" style="color: var(--text-secondary);">Mobile Number</th>
                                     <th class="py-3" style="color: var(--text-secondary);">Status</th>
                                     <th class="py-3" style="color: var(--text-secondary);">Sent At</th>
-                                    <th class="py-3 pe-4" style="color: var(--text-secondary);">Delivery Notes</th>
+                                    <th class="py-3" style="color: var(--text-secondary);">Delivery Notes</th>
+                                    <th class="py-3 pe-4 text-end" style="color: var(--text-secondary);">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -200,11 +201,20 @@
                                             @endif
                                         </td>
                                         <td class="text-muted small">{{ $msg->created_at->format('M d, Y H:i:s') }}</td>
-                                        <td class="pe-4 small text-danger" style="word-break: break-all;">
+                                        <td class="small text-danger" style="word-break: break-all;">
                                             @if($msg->error_message)
                                                 <i class="bi bi-exclamation-triangle-fill"></i> {{ $msg->error_message }}
                                             @else
                                                 <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="pe-4 text-end">
+                                            @if($msg->status === 'failed')
+                                                <button type="button" class="btn btn-xs btn-outline-danger resend-single-btn" data-id="{{ $msg->id }}" style="font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: var(--border-radius-sm);">
+                                                    <i class="bi bi-arrow-clockwise me-1"></i> Resend
+                                                </button>
+                                            @else
+                                                <span class="text-muted small">-</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -253,6 +263,54 @@
         if (lastCampaignStatus === 'processing') {
             startPolling();
         }
+
+        // Resend single failed message click handler
+        $(document).on('click', '.resend-single-btn', function(e) {
+            e.preventDefault();
+            const msgId = $(this).data('id');
+
+            Swal.fire({
+                title: 'Resend Failed Message',
+                text: 'Are you sure you want to retry sending this message now?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--primary-color)',
+                cancelButtonColor: 'var(--secondary-color)',
+                confirmButtonText: 'Resend Now',
+                background: 'var(--card-background)',
+                color: 'var(--text-primary)'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Notiflix.Loading.circle('Resending message...');
+                    $.ajax({
+                        url: `/campaigns/resend-message/${msgId}`,
+                        type: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}"
+                        },
+                        success: function(response) {
+                            Notiflix.Loading.remove();
+                            if (response.status) {
+                                Notiflix.Notify.success(response.message);
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1000);
+                            } else {
+                                Notiflix.Notify.failure(response.message || 'Resend failed.');
+                            }
+                        },
+                        error: function(xhr) {
+                            Notiflix.Loading.remove();
+                            let msg = 'Connection error retrying message.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            }
+                            Notiflix.Notify.failure(msg);
+                        }
+                    });
+                }
+            });
+        });
 
         // Logout
         $('#logout-btn').on('click', function() {
@@ -428,6 +486,15 @@
         const container = $('#campaign-action-controls');
         container.empty();
 
+        const failedCount = {{ $campaign->failed_count }};
+        if (failedCount > 0) {
+            container.append(`
+                <button class="btn btn-outline-danger d-flex align-items-center gap-1 fw-semibold me-1" onclick="triggerAction('resend_failed')" style="border-radius: var(--border-radius-md);" title="Resend all failed messages">
+                    <i class="bi bi-arrow-clockwise"></i> Resend ${failedCount} Failed
+                </button>
+            `);
+        }
+
         let badgeClass = 'bg-secondary';
         let statusText = status.toUpperCase();
 
@@ -509,7 +576,11 @@
         let actionText = `Are you sure you want to perform this action on this campaign?`;
         let confirmColor = 'var(--primary-color)';
 
-        if (action === 'process_now') {
+        if (action === 'resend_failed') {
+            actionTitle = 'Resend Failed Messages';
+            actionText = 'Are you sure you want to reset and retry sending all failed messages in this campaign?';
+            confirmColor = 'var(--danger-color)';
+        } else if (action === 'process_now') {
             actionTitle = 'Trigger 1-Click Send';
             actionText = 'Do you want to force process and dispatch all pending messages for this campaign immediately?';
             confirmColor = 'var(--primary-color)';
