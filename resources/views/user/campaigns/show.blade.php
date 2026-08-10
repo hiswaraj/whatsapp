@@ -436,6 +436,9 @@
             statusText = 'Active Sending';
             
             container.append(`
+                <button class="btn btn-primary d-flex align-items-center gap-1 fw-semibold" onclick="triggerAction('process_now')" style="border-radius: var(--border-radius-md);" title="Force process pending messages immediately">
+                    <i class="bi bi-rocket-takeoff-fill"></i> Send Now (1-Click)
+                </button>
                 <button class="btn btn-warning d-flex align-items-center gap-1 fw-semibold" onclick="triggerAction('pause')" style="border-radius: var(--border-radius-md);">
                     <i class="bi bi-pause-fill"></i> Pause
                 </button>
@@ -448,6 +451,9 @@
             statusText = 'Scheduled';
             
             container.append(`
+                <button class="btn btn-primary d-flex align-items-center gap-1 fw-semibold" onclick="triggerAction('process_now')" style="border-radius: var(--border-radius-md);" title="Start sending immediately">
+                    <i class="bi bi-rocket-takeoff-fill"></i> Send Now (1-Click)
+                </button>
                 <button class="btn btn-danger d-flex align-items-center gap-1 fw-semibold" onclick="triggerAction('cancel')" style="border-radius: var(--border-radius-md);">
                     <i class="bi bi-x-circle"></i> Cancel
                 </button>
@@ -457,6 +463,9 @@
             statusText = 'Paused';
             
             container.append(`
+                <button class="btn btn-primary d-flex align-items-center gap-1 fw-semibold" onclick="triggerAction('process_now')" style="border-radius: var(--border-radius-md);">
+                    <i class="bi bi-rocket-takeoff-fill"></i> Send Now (1-Click)
+                </button>
                 <button class="btn btn-success d-flex align-items-center gap-1 fw-semibold" onclick="triggerAction('resume')" style="border-radius: var(--border-radius-md);">
                     <i class="bi bi-play-fill"></i> Resume
                 </button>
@@ -467,12 +476,25 @@
         } else if (status === 'completed') {
             badgeClass = 'bg-success';
             statusText = 'Completed';
+
+            // Also show Send Now button if there are unsent/pending messages in log
+            container.append(`
+                <button class="btn btn-outline-primary d-flex align-items-center gap-1 fw-semibold" onclick="triggerAction('process_now')" style="border-radius: var(--border-radius-md);" title="Force process any pending messages">
+                    <i class="bi bi-arrow-clockwise"></i> Re-Check / Send Pending
+                </button>
+            `);
         } else if (status === 'cancelled') {
             badgeClass = 'bg-light text-muted border border-secondary-subtle';
             statusText = 'Cancelled';
         } else if (status === 'failed') {
             badgeClass = 'bg-danger';
             statusText = 'Failed';
+
+            container.append(`
+                <button class="btn btn-primary d-flex align-items-center gap-1 fw-semibold" onclick="triggerAction('process_now')" style="border-radius: var(--border-radius-md);">
+                    <i class="bi bi-arrow-clockwise"></i> Retry Sending (1-Click)
+                </button>
+            `);
         }
 
         $('#campaign-status-badge')
@@ -483,21 +505,41 @@
 
     // Call execution action endpoint
     function triggerAction(action) {
-        let actionLabel = action === 'pause' ? 'pause' : (action === 'resume' ? 'resume' : 'cancel');
+        let actionTitle = 'Action Confirmation';
+        let actionText = `Are you sure you want to perform this action on this campaign?`;
+        let confirmColor = 'var(--primary-color)';
+
+        if (action === 'process_now') {
+            actionTitle = 'Trigger 1-Click Send';
+            actionText = 'Do you want to force process and dispatch all pending messages for this campaign immediately?';
+            confirmColor = 'var(--primary-color)';
+        } else if (action === 'pause') {
+            actionTitle = 'Pause Campaign';
+            actionText = 'Are you sure you want to pause this campaign?';
+            confirmColor = 'var(--secondary-color)';
+        } else if (action === 'resume') {
+            actionTitle = 'Resume Campaign';
+            actionText = 'Are you sure you want to resume sending this campaign?';
+            confirmColor = 'var(--success-color)';
+        } else if (action === 'cancel') {
+            actionTitle = 'Cancel Campaign';
+            actionText = 'Are you sure you want to cancel this campaign? Pending messages will be cancelled.';
+            confirmColor = 'var(--danger-color)';
+        }
         
         Swal.fire({
-            title: `Confirm ${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)}`,
-            text: `Are you sure you want to ${actionLabel} this campaign?`,
-            icon: action === 'cancel' ? 'error' : 'warning',
+            title: actionTitle,
+            text: actionText,
+            icon: action === 'cancel' ? 'warning' : 'question',
             showCancelButton: true,
-            confirmButtonColor: action === 'cancel' ? 'var(--danger-color)' : (action === 'resume' ? 'var(--success-color)' : 'var(--secondary-color)'),
+            confirmButtonColor: confirmColor,
             cancelButtonColor: 'var(--secondary-color)',
-            confirmButtonText: `${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)}`,
+            confirmButtonText: action === 'process_now' ? 'Send Messages Now' : 'Confirm',
             background: 'var(--card-background)',
             color: 'var(--text-primary)'
         }).then((result) => {
             if (result.isConfirmed) {
-                Notiflix.Loading.pulse('Updating campaign status...');
+                Notiflix.Loading.circle('Processing campaign dispatch...');
                 $.ajax({
                     url: `/campaigns/${campaignId}/action`,
                     type: 'POST',

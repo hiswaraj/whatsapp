@@ -177,7 +177,7 @@ class CampaignController extends Controller
         $campaign = Campaign::where('user_id', $userId)->findOrFail($id);
 
         $validation = Validator::make($request->all(), [
-            'action' => 'required|string|in:pause,resume,cancel'
+            'action' => 'required|string|in:pause,resume,cancel,process_now'
         ]);
 
         if ($validation->fails()) {
@@ -189,7 +189,31 @@ class CampaignController extends Controller
 
         $action = $request->input('action');
 
-        if ($action === 'pause') {
+        if ($action === 'process_now') {
+            if (in_array($campaign->status, ['cancelled', 'failed'])) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Cannot process a cancelled or failed campaign.'
+                ], 422);
+            }
+
+            if ($campaign->status !== 'processing') {
+                $campaign->update(['status' => 'processing']);
+            }
+
+            try {
+                Artisan::call('campaigns:process');
+                $msg = '1-Click send triggered successfully! Messages are being dispatched now.';
+            } catch (\Exception $e) {
+                try {
+                    Artisan::queue('campaigns:process');
+                    $msg = 'Process command queued for dispatch.';
+                } catch (\Exception $ex) {
+                    Log::warning('Manual dispatch error: ' . $ex->getMessage());
+                    $msg = 'Failed to execute background dispatch: ' . $ex->getMessage();
+                }
+            }
+        } elseif ($action === 'pause') {
             if ($campaign->status !== 'processing') {
                 return response()->json([
                     'status' => false,
@@ -210,7 +234,7 @@ class CampaignController extends Controller
 
             // Trigger immediate process runner
             try {
-                Artisan::queue('campaigns:process');
+                Artisan::call('campaigns:process');
             } catch (\Exception $e) {
                 // Fail-safe
             }
