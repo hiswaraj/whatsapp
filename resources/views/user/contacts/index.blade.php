@@ -17,86 +17,7 @@
 @section('content')
 <div class="dashboard-wrapper">
 
-    <!-- Responsive Mobile Toggler -->
-    <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle Sidebar">
-        <i class="bi bi-list" style="font-size: 1.4rem;"></i>
-    </button>
-
-    <!-- Sidebar Navigation -->
-    <aside class="dashboard-sidebar" id="dashboard-sidebar">
-        <a href="{{ route('user.dashboard') }}" class="sidebar-brand">
-            <div style="background-color: var(--primary-color); border-radius: 8px; padding: 6px; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
-                <i class="bi bi-whatsapp text-white" style="font-size: 1.1rem; line-height: 1;"></i>
-            </div>
-            <span>WhatsApp<span style="color: var(--primary-color);">SaaS</span></span>
-        </a>
-
-        <ul class="sidebar-menu">
-            <li>
-                <a href="{{ route('user.dashboard') }}" class="sidebar-menu-link">
-                    <i class="bi bi-grid"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('contacts.index') }}" class="sidebar-menu-link active">
-                    <i class="bi bi-people"></i>
-                    <span>Contacts</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('groups.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-folder"></i>
-                    <span>Contact Groups</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('chat.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-chat-dots"></i>
-                    <span>Live Chat</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('wabas.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-whatsapp"></i>
-                    <span>WABAs</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('templates.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>Templates</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('campaigns.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-send"></i>
-                    <span>Campaigns</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('media.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-image"></i>
-                    <span>Media Library</span>
-                </a>
-            </li>
-        </ul>
-
-        <div class="sidebar-footer">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <div style="background-color: var(--input-focus-shadow); color: var(--primary-color); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                    {{ substr(Auth::user()->name, 0, 1) }}
-                </div>
-                <div>
-                    <h6 class="mb-0" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">{{ Auth::user()->name }}</h6>
-                    <span class="text-muted" style="font-size: 0.75rem;">Tenant Client</span>
-                </div>
-            </div>
-            <button class="btn btn-outline-danger w-100 btn-sm py-2" id="logout-btn" style="border-radius: var(--border-radius-md); font-weight: 600;">
-                Log Out
-            </button>
-        </div>
-    </aside>
+    @include('layouts.sidebar', ['active' => 'contacts'])
 
     <!-- Main Workspace -->
     <main class="dashboard-main">
@@ -107,6 +28,14 @@
             </div>
             
             <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-primary d-none align-items-center gap-2" id="bulk-assign-btn" style="border-radius: var(--border-radius-md); font-weight: 600;" data-bs-toggle="modal" data-bs-target="#bulkAssignModal">
+                    <i class="bi bi-folder-plus"></i>
+                    <span id="bulk-assign-text">Assign to Group (0)</span>
+                </button>
+                <a href="{{ route('contacts.sample') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius: var(--border-radius-md); font-weight: 600;">
+                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                    <span>Sample Excel</span>
+                </a>
                 <a href="{{ route('contacts.export') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius: var(--border-radius-md); font-weight: 600;">
                     <i class="bi bi-download"></i>
                     <span>Export CSV</span>
@@ -128,6 +57,9 @@
                 <table class="table table-hover align-middle w-100" id="contacts-table">
                     <thead>
                         <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" class="form-check-input" id="check-all-contacts">
+                            </th>
                             <th style="width: 50px;">Avatar</th>
                             <th>Name</th>
                             <th>Mobile Number</th>
@@ -141,6 +73,9 @@
                     <tbody>
                         @foreach($contacts as $contact)
                             <tr>
+                                <td>
+                                    <input type="checkbox" class="form-check-input contact-select-checkbox" value="{{ $contact->id }}">
+                                </td>
                                 <td>
                                     <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background-color: var(--input-focus-shadow); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
                                         @if($contact->avatar_url)
@@ -180,6 +115,9 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-2">
+                                        <button class="btn btn-sm btn-outline-primary quick-assign-btn" data-id="{{ $contact->id }}" data-name="{{ $contact->name }}" data-groups="{{ json_encode($contact->groups->pluck('id')) }}" title="Assign to Group">
+                                            <i class="bi bi-folder-plus"></i> Group
+                                        </button>
                                         <button class="btn btn-sm btn-outline-info sync-contact-dp-btn d-inline-flex align-items-center gap-1" data-id="{{ $contact->id }}" title="Sync Display Picture">
                                             <i class="bi bi-arrow-repeat"></i> Sync DP
                                         </button>
@@ -319,6 +257,67 @@
     </div>
 </div>
 
+<!-- Bulk Assign Modal -->
+<div class="modal fade" id="bulkAssignModal" tabindex="-1" aria-labelledby="bulkAssignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: var(--card-background); border: 1px solid var(--border-color); border-radius: var(--border-radius-md);">
+            <form id="bulk-assign-form">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="bulkAssignModalLabel">Assign Selected Contacts to Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted" style="font-size: 0.88rem;">Assigning <strong id="bulk-modal-count" class="text-primary">0</strong> selected contact(s) to a group:</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Target Group</label>
+                        <select name="group_id" class="form-select select2-groups" style="width: 100%;" required>
+                            <option value="">Select a Group...</option>
+                            @foreach($groups as $gp)
+                                <option value="{{ $gp->id }}">{{ $gp->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: var(--border-radius-md);">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-primary-custom">Assign Contacts</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Assign Single Contact Modal -->
+<div class="modal fade" id="quickAssignModal" tabindex="-1" aria-labelledby="quickAssignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: var(--card-background); border: 1px solid var(--border-color); border-radius: var(--border-radius-md);">
+            <form id="quick-assign-form">
+                @csrf
+                <input type="hidden" id="quick-contact-id">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="quickAssignModalLabel">Assign Groups for <span id="quick-contact-name" class="text-primary"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Select Groups</label>
+                        <select name="group_ids[]" id="quick-groups-select" class="form-select select2-groups" multiple="multiple" style="width: 100%;">
+                            @foreach($groups as $gp)
+                                <option value="{{ $gp->id }}">{{ $gp->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: var(--border-radius-md);">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-primary-custom">Save Groups</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Import Modal -->
 <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -326,18 +325,34 @@
             <form id="import-contacts-form" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="importModalLabel">Import Contacts from CSV</h5>
+                    <h5 class="modal-title fw-bold" id="importModalLabel">Import Contacts from Excel/CSV</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted" style="font-size: 0.85rem;">Need a template? Download sample spreadsheet:</span>
+                        <a href="{{ route('contacts.sample') }}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" style="font-weight: 600;">
+                            <i class="bi bi-download"></i> Sample Excel
+                        </a>
+                    </div>
                     <div class="alert alert-info py-2" style="font-size: 0.82rem;">
-                        <strong>CSV structure requirements:</strong><br>
-                        The CSV file must contain column headers in the first row:<br>
-                        <code>name, mobile_number, email, tags, notes</code>
+                        <strong>CSV/Excel structure requirements:</strong><br>
+                        Headers in the first row can include:<br>
+                        <code>name, mobile_number, email, group_name, tags, notes</code><br>
+                        <em>Note: If <strong>group_name</strong> is provided, contacts will automatically be assigned to that group.</em>
                     </div>
                     <div class="mb-3">
-                        <label for="file" class="form-label fw-semibold">Select CSV File</label>
-                        <input type="file" name="file" id="file" class="form-control form-control-custom" accept=".csv" required>
+                        <label for="import-group-id" class="form-label fw-semibold">Default Group Assignment (Optional)</label>
+                        <select name="group_id" id="import-group-id" class="form-select select2-groups">
+                            <option value="">-- No Default Group (Use Excel Group Column) --</option>
+                            @foreach($groups as $gp)
+                                <option value="{{ $gp->id }}">{{ $gp->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file" class="form-label fw-semibold">Select Excel/CSV File</label>
+                        <input type="file" name="file" id="file" class="form-control form-control-custom" accept=".csv,.xlsx,.xls,.txt" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -389,6 +404,130 @@
         
         // Style search bar wrapper
         $('.dataTables_filter input').addClass('form-control form-control-custom d-inline-block w-auto ms-2');
+
+        // Global selected contacts tracking
+        let selectedContactIds = [];
+
+        // Handle Check All Contacts
+        $('#check-all-contacts').on('change', function() {
+            const isChecked = $(this).is(':checked');
+            $('.contact-select-checkbox').prop('checked', isChecked).trigger('change');
+        });
+
+        // Monitor contact checkbox selection
+        $(document).on('change', '.contact-select-checkbox', function() {
+            selectedContactIds = [];
+            $('.contact-select-checkbox:checked').each(function() {
+                selectedContactIds.push($(this).val());
+            });
+
+            if (selectedContactIds.length > 0) {
+                $('#bulk-assign-btn').removeClass('d-none').addClass('d-inline-flex');
+                $('#bulk-assign-text').text(`Assign to Group (${selectedContactIds.length})`);
+                $('#bulk-modal-count').text(selectedContactIds.length);
+            } else {
+                $('#bulk-assign-btn').addClass('d-none').removeClass('d-inline-flex');
+                $('#check-all-contacts').prop('checked', false);
+            }
+        });
+
+        // Form Submit: Bulk Assign Contacts
+        $('#bulk-assign-form').on('submit', function(e) {
+            e.preventDefault();
+            if (selectedContactIds.length === 0) return;
+
+            Notiflix.Loading.circle('Assigning contacts to group...');
+
+            const groupId = $(this).find('select[name="group_id"]').val();
+
+            $.ajax({
+                url: "{{ route('groups.assign') }}",
+                type: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    group_id: groupId,
+                    contact_ids: selectedContactIds
+                },
+                dataType: "json",
+                success: function(response) {
+                    Notiflix.Loading.remove();
+                    if (response.status) {
+                        $('#bulkAssignModal').modal('hide');
+                        Notiflix.Notify.success(response.message);
+                        window.location.reload();
+                    }
+                },
+                error: function(xhr) {
+                    Notiflix.Loading.remove();
+                    let msg = 'Failed to assign contacts to group.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Notiflix.Notify.failure(msg);
+                }
+            });
+        });
+
+        // Quick Assign Single Contact
+        $(document).on('click', '.quick-assign-btn', function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            const groups = $(this).data('groups');
+
+            $('#quick-contact-id').val(id);
+            $('#quick-contact-name').text(name);
+            $('#quick-groups-select').val(groups).trigger('change');
+
+            $('#quickAssignModal').modal('show');
+        });
+
+        // Form Submit: Quick Assign Single Contact Groups
+        $('#quick-assign-form').on('submit', function(e) {
+            e.preventDefault();
+            const id = $('#quick-contact-id').val();
+            Notiflix.Loading.circle('Saving contact groups...');
+
+            const groupIds = $('#quick-groups-select').val() || [];
+
+            const editBtn = $(`.edit-contact-btn[data-id="${id}"]`);
+            const name = editBtn.data('name');
+            const mobile = editBtn.data('mobile');
+            const email = editBtn.data('email');
+            const tags = editBtn.data('tags');
+            const notes = editBtn.data('notes');
+
+            $.ajax({
+                url: `/contacts/${id}`,
+                type: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    _method: "PUT",
+                    name: name,
+                    mobile_number: mobile,
+                    email: email,
+                    tags: tags,
+                    notes: notes,
+                    group_ids: groupIds
+                },
+                dataType: "json",
+                success: function(response) {
+                    Notiflix.Loading.remove();
+                    if (response.status) {
+                        $('#quickAssignModal').modal('hide');
+                        Notiflix.Notify.success(response.message);
+                        window.location.reload();
+                    }
+                },
+                error: function(xhr) {
+                    Notiflix.Loading.remove();
+                    let msg = 'Failed to save groups.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Notiflix.Notify.failure(msg);
+                }
+            });
+        });
 
         // Form Submit: Add Contact
         $('#create-contact-form').on('submit', function(e) {

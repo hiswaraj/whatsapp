@@ -231,7 +231,8 @@ class ContactController extends Controller
     public function import(Request $request): JsonResponse
     {
         $validation = Validator::make($request->all(), [
-            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:8192'
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:8192',
+            'group_id' => 'nullable|exists:contact_groups,id'
         ]);
 
         if ($validation->fails()) {
@@ -243,7 +244,8 @@ class ContactController extends Controller
 
         try {
             $file = $request->file('file');
-            $import = new ContactsImport();
+            $groupId = $request->input('group_id') ? (int)$request->input('group_id') : null;
+            $import = new ContactsImport($groupId);
             Excel::import($import, $file);
 
             return response()->json([
@@ -256,6 +258,31 @@ class ContactController extends Controller
                 'message' => 'Import failed: ' . $e->getMessage()
             ], 422);
         }
+    }
+
+    /**
+     * Download sample contacts CSV template.
+     */
+    public function downloadSample(): StreamedResponse
+    {
+        $headers = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=contacts_sample.csv',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $callback = function () {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['name', 'mobile_number', 'email', 'group_name', 'tags', 'notes']);
+            fputcsv($file, ['John Doe', '+15550192831', 'john@example.com', 'Beta Testers', 'lead', 'Software Developer']);
+            fputcsv($file, ['Jane Smith', '+919876543210', 'jane@example.com', 'VIP Customers', 'vip', 'Enterprise Client']);
+            fputcsv($file, ['Alex Rivera', '+15550149204', 'alex@example.com', 'Beta Testers', 'tester', 'QA Engineer']);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

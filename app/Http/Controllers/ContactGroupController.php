@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Contact;
 use App\Models\ContactGroup;
+use App\Imports\GroupsImport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ContactGroupController extends Controller
 {
@@ -210,5 +213,63 @@ class ContactGroupController extends Controller
             'status' => true,
             'message' => 'Contacts removed from group successfully!'
         ]);
+    }
+
+    /**
+     * Download sample contact groups CSV template.
+     */
+    public function downloadSample(): StreamedResponse
+    {
+        $headers = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=groups_sample.csv',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $callback = function () {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['group_name', 'contact_name', 'mobile_number', 'email']);
+            fputcsv($file, ['Beta Testers', 'John Doe', '+15550192831', 'john@example.com']);
+            fputcsv($file, ['VIP Customers', 'Jane Smith', '+919876543210', 'jane@example.com']);
+            fputcsv($file, ['Marketing Leads', '', '', '']);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Bulk CSV/Excel group importer.
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $validation = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:8192'
+        ]);
+
+        if ($validation->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validation->errors()->first()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+            $import = new GroupsImport();
+            Excel::import($import, $file);
+
+            return response()->json([
+                'status' => true,
+                'message' => "Groups spreadsheet imported successfully. Created: {$import->groupsCreated} group(s), Processed: {$import->groupsProcessed} group(s), Assigned: {$import->contactsImported} contact(s)."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ], 422);
+        }
     }
 }

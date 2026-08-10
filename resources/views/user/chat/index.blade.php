@@ -13,6 +13,29 @@
         overflow: hidden;
         background-color: var(--card-background);
         box-shadow: var(--shadow-sm);
+        transition: var(--transition-fast);
+    }
+
+    /* Chat layout Fullscreen mode */
+    .chat-layout.is-fullscreen {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 99999 !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+    }
+    
+    :fullscreen .chat-layout,
+    :-webkit-full-screen .chat-layout,
+    :-moz-full-screen .chat-layout {
+        width: 100vw !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
+        border: none !important;
     }
     
     /* Left sidebar: conversations list */
@@ -204,7 +227,34 @@
         text-align: center;
     }
     
-    /* Messages area */
+    /* Messages area and GPU acceleration */
+    .chat-threads-list,
+    .chat-messages-container {
+        transform: translateZ(0);
+        will-change: scroll-position;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Custom smooth React-like scrollbars */
+    .chat-threads-list::-webkit-scrollbar,
+    .chat-messages-container::-webkit-scrollbar {
+        width: 5px;
+    }
+    .chat-threads-list::-webkit-scrollbar-track,
+    .chat-messages-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .chat-threads-list::-webkit-scrollbar-thumb,
+    .chat-messages-container::-webkit-scrollbar-thumb {
+        background-color: rgba(148, 163, 184, 0.3);
+        border-radius: 999px;
+    }
+    .chat-threads-list::-webkit-scrollbar-thumb:hover,
+    .chat-messages-container::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(148, 163, 184, 0.6);
+    }
+    
     .chat-messages-container {
         flex: 1;
         overflow-y: auto;
@@ -220,6 +270,13 @@
         flex-direction: column;
         max-width: 70%;
         width: fit-content;
+        transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+        animation: popBubble 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popBubble {
+        0% { opacity: 0; transform: scale(0.96) translateY(4px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     
     .chat-bubble-wrapper.outgoing {
@@ -513,86 +570,7 @@
 @section('content')
 <div class="dashboard-wrapper">
 
-    <!-- Responsive Mobile Toggler -->
-    <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle Sidebar">
-        <i class="bi bi-list" style="font-size: 1.4rem;"></i>
-    </button>
-
-    <!-- Sidebar Navigation -->
-    <aside class="dashboard-sidebar" id="dashboard-sidebar">
-        <a href="{{ route('user.dashboard') }}" class="sidebar-brand">
-            <div style="background-color: var(--primary-color); border-radius: 8px; padding: 6px; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
-                <i class="bi bi-whatsapp text-white" style="font-size: 1.1rem; line-height: 1;"></i>
-            </div>
-            <span>WhatsApp<span style="color: var(--primary-color);">SaaS</span></span>
-        </a>
-
-        <ul class="sidebar-menu">
-            <li>
-                <a href="{{ route('user.dashboard') }}" class="sidebar-menu-link">
-                    <i class="bi bi-grid"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('contacts.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-people"></i>
-                    <span>Contacts</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('groups.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-folder"></i>
-                    <span>Contact Groups</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('chat.index') }}" class="sidebar-menu-link active">
-                    <i class="bi bi-chat-dots"></i>
-                    <span>Live Chat</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('wabas.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-whatsapp"></i>
-                    <span>WABAs</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('templates.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>Templates</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('campaigns.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-send"></i>
-                    <span>Campaigns</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('media.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-image"></i>
-                    <span>Media Library</span>
-                </a>
-            </li>
-        </ul>
-
-        <div class="sidebar-footer">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <div style="background-color: var(--input-focus-shadow); color: var(--primary-color); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                    {{ substr(Auth::user()->name, 0, 1) }}
-                </div>
-                <div>
-                    <h6 class="mb-0" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">{{ Auth::user()->name }}</h6>
-                    <span class="text-muted" style="font-size: 0.75rem;">Tenant Client</span>
-                </div>
-            </div>
-            <button class="btn btn-outline-danger w-100 btn-sm py-2" id="logout-btn" style="border-radius: var(--border-radius-md); font-weight: 600;">
-                Log Out
-            </button>
-        </div>
-    </aside>
+    @include('layouts.sidebar', ['active' => 'chat'])
 
     <!-- Main Workspace -->
     <main class="dashboard-main">
@@ -601,10 +579,16 @@
                 <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.2rem;">WhatsApp Live Chat</h1>
                 <span class="text-muted" style="font-size: 0.85rem;">Converse in real-time with your contacts and trigger message templates</span>
             </div>
+            <div>
+                <button type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 px-3 py-2 chat-fullscreen-trigger" style="border-radius: var(--border-radius-md); font-weight: 600;">
+                    <i class="bi bi-arrows-fullscreen chat-fullscreen-icon"></i>
+                    <span class="chat-fullscreen-text">Full Screen Chat</span>
+                </button>
+            </div>
         </header>
 
         <!-- Live Chat Main Section -->
-        <section class="chat-layout fade-in-element">
+        <section class="chat-layout fade-in-element" id="chat-layout-container">
             
             <!-- Sidebar: Threads List -->
             <div class="chat-threads-sidebar">
@@ -890,6 +874,10 @@
             renderWorkspaceSkeleton();
         }
 
+        let lastThreadsHash = '';
+        let lastMessagesHash = {};
+        let searchDebounceTimer = null;
+
         // Fetch conversation list and update sidebar UI
         function fetchConversations(isFirstLoad = false) {
             const wabaId = $('#waba-chat-filter').val() || '';
@@ -922,11 +910,10 @@
             });
         }
 
-        // Render Sidebar List
-        function renderConversationsList() {
+        // Render Sidebar List with state hashing to prevent unnecessary repaints
+        function renderConversationsList(forceRender = false) {
             const searchQuery = $('#contact-search').val().toLowerCase().trim();
             const container = $('#threads-container');
-            container.empty();
 
             const filtered = conversationsList.filter(function(conv) {
                 const name = conv.contact.name.toLowerCase();
@@ -934,37 +921,49 @@
                 return name.includes(searchQuery) || number.includes(searchQuery);
             });
 
+            // State signature hash comparison
+            const currentHash = searchQuery + '|' + activeConversationId + '|' + JSON.stringify(filtered.map(c => [
+                c.id, 
+                c.unread_count, 
+                c.last_message ? c.last_message.id : 0, 
+                c.last_message_at,
+                c.contact.name,
+                c.contact.avatar_url
+            ]));
+
+            if (!forceRender && currentHash === lastThreadsHash) {
+                return; // Nothing changed, skip DOM repaints!
+            }
+            lastThreadsHash = currentHash;
+
             if (filtered.length === 0) {
-                container.append('<li class="text-center py-5 text-muted small">No conversations found</li>');
+                container.html('<li class="text-center py-5 text-muted small">No conversations found</li>');
                 return;
             }
 
-            filtered.forEach(function(conv) {
+            const htmlArr = filtered.map(function(conv) {
                 const isActive = (conv.id === activeConversationId) ? 'active' : '';
                 const unreadBadge = conv.unread_count > 0 ? `<span class="chat-unread-badge">${conv.unread_count}</span>` : '';
                 
-                // Format message snippet
                 let lastMsgText = 'No messages yet';
                 if (conv.last_message) {
                     lastMsgText = conv.last_message.body || '[Media/Attachment]';
                 }
 
-                // Format timestamp
                 let timeStr = '';
                 if (conv.last_message_at) {
                     const date = new Date(conv.last_message_at);
                     timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
 
-                const initials = conv.contact.name.substring(0, 1).toUpperCase();
                 let avatarHtml = '';
                 if (conv.contact.avatar_url) {
-                    avatarHtml = `<img src="${window.location.origin}/${conv.contact.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    avatarHtml = `<img src="${window.location.origin}/${conv.contact.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" loading="lazy">`;
                 } else {
-                    avatarHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(conv.contact.name)}&background=random&color=fff&size=128" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    avatarHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(conv.contact.name)}&background=random&color=fff&size=128" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" loading="lazy">`;
                 }
 
-                const html = `
+                return `
                     <li class="chat-thread-item ${isActive}" data-id="${conv.id}">
                         <div class="chat-avatar">${avatarHtml}</div>
                         <div class="chat-thread-info">
@@ -973,19 +972,23 @@
                                 <span class="chat-thread-time">${timeStr}</span>
                             </div>
                             <div class="chat-thread-body-wrapper">
-                                <p class="chat-thread-snippet">${lastMsgText}</p>
+                                <p class="chat-thread-snippet">${$('<div>').text(lastMsgText).html()}</p>
                                 ${unreadBadge}
                             </div>
                         </div>
                     </li>
                 `;
-                container.append(html);
             });
+
+            container.html(htmlArr.join(''));
         }
 
-        // Search conversations listener
+        // Debounced search conversations listener
         $('#contact-search').on('keyup input', function() {
-            renderConversationsList();
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+                renderConversationsList(true);
+            }, 120);
         });
 
         // WABA filter change listener
@@ -1037,7 +1040,10 @@
                             </div>
                         </div>
                     </div>
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 chat-fullscreen-trigger" title="Toggle Fullscreen Chat" style="border-radius: var(--border-radius-md); font-weight: 600;">
+                            <i class="bi bi-arrows-fullscreen chat-fullscreen-icon"></i>
+                        </button>
                         <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 fw-bold" id="trigger-template-btn">
                             <i class="bi bi-file-earmark-text"></i> Send Template
                         </button>
@@ -1253,7 +1259,7 @@
             clearTemplateHeaderMedia();
         });
 
-        // Fetch Messages for open chat
+        // Fetch Messages for open chat with state diffing
         function fetchMessages(convId, isQuietPoll = false) {
             $.ajax({
                 url: `/chat/conversations/${convId}/messages`,
@@ -1318,12 +1324,12 @@
                         const feed = $('#chat-messages-feed');
                         const isAtBottom = feed.scrollTop() + feed.innerHeight() >= feed[0].scrollHeight - 50;
 
-                        // Render messages
-                        renderMessagesFeed(response.messages);
+                        // Render messages smartly
+                        renderMessagesFeed(response.messages, isQuietPoll);
 
                         // If it's a first load or user was at bottom, scroll down
                         if (!isQuietPoll || isAtBottom) {
-                            scrollToBottom();
+                            scrollToBottom(isQuietPoll);
                         }
                     }
                 },
@@ -1338,32 +1344,36 @@
             $('#chat-countdown-timer').text(`${h}:${m}:${s}`);
         }
 
-        // Render Chat Feed Bubbles
-        function renderMessagesFeed(messages) {
+        // Render Chat Feed Bubbles with DOM diffing & quiet update support
+        function renderMessagesFeed(messages, isQuietPoll = false) {
             const feed = $('#chat-messages-feed');
-            feed.empty();
+            
+            const currentHash = JSON.stringify(messages.map(m => [m.id, m.status, m.updated_at, m.body, m.media_path]));
+            if (isQuietPoll && lastMessagesHash[activeConversationId] === currentHash) {
+                return; // Nothing changed, prevent feed re-render!
+            }
+            lastMessagesHash[activeConversationId] = currentHash;
 
             if (messages.length === 0) {
-                feed.append('<div class="chat-divider">No messages. Send a message to start conversation.</div>');
+                feed.html('<div class="chat-divider">No messages. Send a message to start conversation.</div>');
                 return;
             }
 
+            let htmlArr = [];
             let lastDate = '';
 
             messages.forEach(function(msg) {
-                // Parse date divider
                 const date = new Date(msg.created_at);
                 const dateString = date.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 
                 if (dateString !== lastDate) {
-                    feed.append(`<div class="chat-divider">${dateString}</div>`);
+                    htmlArr.push(`<div class="chat-divider">${dateString}</div>`);
                     lastDate = dateString;
                 }
 
                 const isOutgoing = msg.type === 'outgoing';
                 const wrapperClass = isOutgoing ? 'outgoing' : 'incoming';
                 
-                // Format checkmark ticks for outgoing messages
                 let ticks = '';
                 if (isOutgoing) {
                     if (msg.status === 'read') {
@@ -1375,13 +1385,12 @@
                     } else if (msg.status === 'failed') {
                         ticks = '<i class="bi bi-exclamation-circle-fill status-tick failed" title="Failed"></i>';
                     } else {
-                        ticks = '<i class="bi bi-clock status-tick text-muted" title="Pending"></i>';
+                        ticks = '<i class="bi bi-clock status-tick text-muted" title="Sending..."></i>';
                     }
                 }
 
                 const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                // Construct message body with HTML escape
                 let messageBody = '';
                 if (msg.media_path) {
                     const mediaUrl = window.location.origin + '/' + msg.media_path;
@@ -1417,34 +1426,40 @@
                         messageBody += `<div class="mt-2 text-wrap">${textBody}</div>`;
                     }
                 } else {
-                    messageBody = $('<div>').text(msg.body).html();
+                    messageBody = $('<div>').text(msg.body || '').html();
                     messageBody = messageBody.replace(/\n/g, '<br>');
                 }
 
-                const bubbleHtml = `
-                    <div class="chat-bubble-wrapper ${wrapperClass}">
+                htmlArr.push(`
+                    <div class="chat-bubble-wrapper ${wrapperClass}" id="msg-bubble-${msg.id}">
                         <div class="chat-bubble">
                             <div class="chat-body">${messageBody}</div>
                             <div class="chat-meta">
                                 <span>${timeStr}</span>
-                                ${ticks}
+                                <span id="msg-tick-${msg.id}">${ticks}</span>
                             </div>
                         </div>
                     </div>
-                `;
-                feed.append(bubbleHtml);
+                `);
             });
+
+            // Fast innerHTML update
+            feed.html(htmlArr.join(''));
         }
 
-        // Scroll feed to bottom
-        function scrollToBottom() {
+        // Smooth Scroll feed to bottom
+        function scrollToBottom(smooth = false) {
             const feed = $('#chat-messages-feed');
             if (feed.length) {
-                feed.scrollTop(feed[0].scrollHeight);
+                if (smooth && feed[0].scrollTo) {
+                    feed[0].scrollTo({ top: feed[0].scrollHeight, behavior: 'smooth' });
+                } else {
+                    feed.scrollTop(feed[0].scrollHeight);
+                }
             }
         }
 
-        // Send Text Message
+        // Optimistic Send Text Message
         function sendTextMessage() {
             const form = $('#send-chat-msg-form');
             const textarea = $('.chat-input-field');
@@ -1452,7 +1467,29 @@
             const mediaId = $('#chat-media-id').val();
             if (!body && !mediaId) return;
 
-            // Clear input immediately for optimal snappy feedback
+            const tempId = 'temp-' + Date.now();
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const safeText = $('<div>').text(body).html().replace(/\n/g, '<br>');
+
+            // Optimistic bubble rendering for instant feedback
+            const optimisticBubble = `
+                <div class="chat-bubble-wrapper outgoing" id="msg-bubble-${tempId}">
+                    <div class="chat-bubble">
+                        <div class="chat-body">${safeText}</div>
+                        <div class="chat-meta">
+                            <span>${timeStr}</span>
+                            <span id="msg-tick-${tempId}"><i class="bi bi-clock status-tick text-muted" title="Sending..."></i></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const feed = $('#chat-messages-feed');
+            feed.find('.chat-divider:contains("No messages")').remove();
+            feed.append(optimisticBubble);
+            scrollToBottom(true);
+
+            // Clear input field immediately for React-like instant responsiveness
             const formData = form.serialize();
             textarea.val('');
             clearChatAttachment();
@@ -1464,19 +1501,21 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.status) {
-                        fetchMessages(activeConversationId);
+                        $(`#msg-tick-${tempId}`).html('<i class="bi bi-check2 status-tick" title="Sent"></i>');
+                        fetchMessages(activeConversationId, true);
                         fetchConversations();
+                    } else {
+                        $(`#msg-tick-${tempId}`).html('<i class="bi bi-exclamation-circle-fill status-tick failed" title="Failed"></i>');
+                        Notiflix.Notify.failure(response.message || 'Failed to send message.');
                     }
                 },
                 error: function(xhr) {
+                    $(`#msg-tick-${tempId}`).html('<i class="bi bi-exclamation-circle-fill status-tick failed" title="Failed"></i>');
                     let msg = 'Failed to dispatch message.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         msg = xhr.responseJSON.message;
                     }
                     Notiflix.Notify.failure(msg);
-                    
-                    // Restore body text on fail
-                    textarea.val(body);
                 }
             });
         }
@@ -1953,6 +1992,49 @@
                 }
             });
         }
+
+        // Live Chat Specific Fullscreen Mode Toggle Handler
+        $(document).on('click', '.chat-fullscreen-trigger', function(e) {
+            e.preventDefault();
+            const chatElem = document.getElementById('chat-layout-container');
+            if (!chatElem) return;
+            
+            const isFs = !!(document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement || $('#chat-layout-container').hasClass('is-fullscreen'));
+
+            if (!isFs) {
+                if (chatElem.requestFullscreen) {
+                    chatElem.requestFullscreen().catch(() => $('#chat-layout-container').addClass('is-fullscreen'));
+                } else if (chatElem.webkitRequestFullscreen) {
+                    chatElem.webkitRequestFullscreen();
+                } else if (chatElem.msRequestFullscreen) {
+                    chatElem.msRequestFullscreen();
+                } else {
+                    $('#chat-layout-container').addClass('is-fullscreen');
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => $('#chat-layout-container').removeClass('is-fullscreen'));
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                $('#chat-layout-container').removeClass('is-fullscreen');
+            }
+        });
+
+        $(document).on('fullscreenchange webkitfullscreenchange mozfullscreenchange MSFullscreenChange', function() {
+            const isFullscreen = !!(document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+            if (isFullscreen) {
+                $('.chat-fullscreen-icon').removeClass('bi-arrows-fullscreen').addClass('bi-fullscreen-exit');
+                $('.chat-fullscreen-text').text('Exit Fullscreen');
+                $('#chat-layout-container').addClass('is-fullscreen');
+            } else {
+                $('.chat-fullscreen-icon').removeClass('bi-fullscreen-exit').addClass('bi-arrows-fullscreen');
+                $('.chat-fullscreen-text').text('Full Screen Chat');
+                $('#chat-layout-container').removeClass('is-fullscreen');
+            }
+        });
 
         // AJAX Logout handler
         $('#logout-btn').on('click', function() {

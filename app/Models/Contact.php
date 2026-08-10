@@ -63,7 +63,17 @@ class Contact extends Model
             return '';
         }
 
-        $cleaned = preg_replace('/[^\d+]/', '', trim($number));
+        $trimmed = trim((string)$number);
+
+        // Convert scientific notation (e.g. 9.19877E+11) or float representations from Excel
+        if (is_numeric($trimmed) || stripos($trimmed, 'e+') !== false || stripos($trimmed, 'e-') !== false) {
+            $floatVal = (float)$trimmed;
+            if ($floatVal > 0) {
+                $trimmed = sprintf('%.0f', $floatVal);
+            }
+        }
+
+        $cleaned = preg_replace('/[^\d+]/', '', $trimmed);
         $digits = ltrim($cleaned, '+');
 
         if (empty($digits)) {
@@ -91,7 +101,7 @@ class Contact extends Model
         }
 
         $normalized = self::normalizePhoneNumber($mobileNumber);
-        $digits = preg_replace('/\D/', '', $mobileNumber);
+        $digits = preg_replace('/\D/', '', $normalized);
         $last10 = (strlen($digits) >= 10) ? substr($digits, -10) : $digits;
 
         return self::where('user_id', $userId)
