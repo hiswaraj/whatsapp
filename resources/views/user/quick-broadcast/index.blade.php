@@ -1,9 +1,30 @@
 @extends('layouts.auth')
 
-@section('title', 'Quick Broadcast - WhatsApp SaaS Platform')
+@section('title', 'Quick & Group Broadcast - WhatsApp SaaS Platform')
 
 @section('styles')
 <style>
+    .source-tab-btn {
+        border-radius: var(--border-radius-md);
+        transition: all 0.2s ease-in-out;
+        background-color: var(--card-background);
+        border-color: var(--border-color);
+        color: var(--text-secondary);
+    }
+    .source-tab-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background-color: var(--input-focus-shadow);
+    }
+    .source-tab-btn.active {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+        color: #ffffff !important;
+        box-shadow: var(--shadow-sm);
+    }
+    .source-tab-btn.active small {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
     .upload-zone {
         border: 2px dashed var(--border-color);
         border-radius: var(--border-radius-md);
@@ -102,8 +123,8 @@
     <main class="dashboard-main">
         <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom fade-in-element">
             <div>
-                <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.2rem;">Quick Excel/CSV Broadcast</h1>
-                <span class="text-muted" style="font-size: 0.85rem;">Upload spreadsheet numbers, map template variables, and send instantly</span>
+                <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.2rem;">Quick & Group Broadcast</h1>
+                <span class="text-muted" style="font-size: 0.85rem;">Broadcast via Excel/CSV file upload or target existing Contact Groups instantly</span>
             </div>
             <div>
                 <a href="{{ route('campaigns.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius: var(--border-radius-md); font-weight: 600;">
@@ -116,50 +137,102 @@
             <!-- Setup & Mapping Form -->
             <div class="col-lg-7 col-md-12">
                 <div class="card border p-4 mb-4" style="border-radius: var(--border-radius-md); background-color: var(--card-background); border-color: var(--border-color) !important;">
-                    <h5 class="fw-bold mb-4" style="color: var(--text-primary); font-size: 1.05rem;">
-                        <i class="bi bi-file-earmark-spreadsheet text-primary me-2"></i> Step 1: Upload Broadcast File
+                    <h5 class="fw-bold mb-3" style="color: var(--text-primary); font-size: 1.05rem;">
+                        <i class="bi bi-bullseye text-primary me-2"></i> Step 1: Select Broadcast Target
                     </h5>
                     
-                    <!-- File Drag & Drop Zone -->
-                    <input type="file" id="file-input" class="d-none" accept=".csv,.xlsx,.xls,text/csv">
-                    <div class="upload-zone" id="drag-drop-zone">
-                        <i class="bi bi-cloud-arrow-up upload-icon"></i>
-                        <h6 class="fw-semibold text-primary mb-1">Click to upload or drag & drop</h6>
-                        <p class="text-muted small mb-0">Supported file formats: CSV, XLSX, XLS (Max 8MB)</p>
-                        <div class="mt-3 pt-2 border-top border-secondary-subtle">
-                            <a href="{{ route('quick-broadcast.sample') }}" class="text-decoration-none fw-bold small" onclick="event.stopPropagation();" style="color: var(--primary-color);">
-                                <i class="bi bi-download me-1"></i> Download Sample Spreadsheet Template
-                            </a>
+                    <!-- Source Selection Tabs -->
+                    <div class="mb-4">
+                        <div class="row g-2" id="source-selector">
+                            <div class="col-6">
+                                <button type="button" class="btn source-tab-btn w-100 py-3 active" data-source="file">
+                                    <i class="bi bi-file-earmark-spreadsheet fs-4 d-block mb-1"></i>
+                                    <span class="fw-bold d-block">Excel / CSV File</span>
+                                    <small class="text-muted d-block" style="font-size: 0.72rem;">Upload Spreadsheet</small>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn source-tab-btn w-100 py-3" data-source="group">
+                                    <i class="bi bi-people-fill fs-4 d-block mb-1"></i>
+                                    <span class="fw-bold d-block">Contact Group</span>
+                                    <small class="text-muted d-block" style="font-size: 0.72rem;">Group-Wise Broadcast</small>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- File Details Preview -->
-                    <div class="file-details-card d-none" id="file-preview-card">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="text-success" style="font-size: 1.75rem;">
-                                    <i class="bi bi-file-earmark-check-fill"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-bold mb-0 text-primary" id="loaded-filename">data.xlsx</h6>
-                                    <span class="text-muted small" id="loaded-filecount">Found 0 data rows</span>
-                                </div>
+                    <!-- Mode A: File Drag & Drop Zone -->
+                    <div id="file-source-zone">
+                        <input type="file" id="file-input" class="d-none" accept=".csv,.xlsx,.xls,text/csv">
+                        <div class="upload-zone" id="drag-drop-zone">
+                            <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                            <h6 class="fw-semibold text-primary mb-1">Click to upload or drag & drop</h6>
+                            <p class="text-muted small mb-0">Supported file formats: CSV, XLSX, XLS (Max 8MB)</p>
+                            <div class="mt-3 pt-2 border-top border-secondary-subtle">
+                                <a href="{{ route('quick-broadcast.sample') }}" class="text-decoration-none fw-bold small" onclick="event.stopPropagation();" style="color: var(--primary-color);">
+                                    <i class="bi bi-download me-1"></i> Download Sample Spreadsheet Template
+                                </a>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger" id="remove-file-btn">
-                                <i class="bi bi-trash"></i> Remove
-                            </button>
+                        </div>
+
+                        <!-- File Details Preview -->
+                        <div class="file-details-card d-none" id="file-preview-card">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="text-success" style="font-size: 1.75rem;">
+                                        <i class="bi bi-file-earmark-check-fill"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-primary" id="loaded-filename">data.xlsx</h6>
+                                        <span class="text-muted small" id="loaded-filecount">Found 0 data rows</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="remove-file-btn">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode B: Contact Group Picker Zone -->
+                    <div class="d-none" id="group-source-zone">
+                        <label for="contact_group_id_select" class="form-label fw-semibold">Select Contact Group</label>
+                        <select id="contact_group_id_select" class="form-select form-control-custom py-2.5">
+                            <option value="" selected disabled>-- Choose Saved Contact Group --</option>
+                            @foreach($groups as $grp)
+                                <option value="{{ $grp->id }}" data-name="{{ $grp->name }}" data-count="{{ $grp->contacts_count }}">
+                                    {{ $grp->name }} ({{ $grp->contacts_count }} contacts)
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <div class="file-details-card d-none mt-3" id="group-preview-card">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="text-primary" style="font-size: 1.75rem;">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-primary" id="loaded-group-name">VIP Customers</h6>
+                                        <span class="text-muted small" id="loaded-group-count">45 contacts target</span>
+                                    </div>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary px-3 py-2 fw-bold" style="border-radius: var(--border-radius-pill);">Group Target</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Broadcast Configuration (Visible only when file is loaded) -->
+                <!-- Broadcast Configuration -->
                 <div class="card border p-4 d-none mapping-card" id="configuration-card" style="border-radius: var(--border-radius-md); background-color: var(--card-background); border-color: var(--border-color) !important;">
                     <form id="broadcast-send-form">
                         @csrf
+                        <input type="hidden" name="source_type" id="source_type" value="file">
                         <input type="hidden" name="filepath" id="hidden-filepath">
+                        <input type="hidden" name="contact_group_id" id="hidden-contact-group-id">
 
                         <h5 class="fw-bold mb-4 text-primary" style="font-size: 1.05rem;">
-                            <i class="bi bi-sliders me-2"></i> Step 2: Configure & Map Broadcast
+                            <i class="bi bi-sliders me-2"></i> Step 2: Configure Broadcast & Message
                         </h5>
 
                         <!-- Broadcast Name -->
@@ -179,42 +252,45 @@
                             </select>
                         </div>
 
-                        <!-- Save Contacts Checkbox -->
-                        <div class="mb-4 p-3 border rounded" style="background-color: var(--background-color); border-color: var(--border-color) !important;">
+                        <!-- Save Contacts Checkbox (Only for File Mode) -->
+                        <div class="mb-4 p-3 border rounded" id="save-contacts-wrapper" style="background-color: var(--background-color); border-color: var(--border-color) !important;">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="save_contacts" id="save_contacts" value="1">
                                 <label class="form-check-label fw-semibold text-primary" for="save_contacts">Save recipients permanently to Contacts directory</label>
                             </div>
-                            <small class="text-muted d-block mt-1">If unchecked, messages will be sent instantly as a quick broadcast, without saving the numbers to your contacts list.</small>
+                            <small class="text-muted d-block mt-1">If unchecked, messages will be sent instantly as a quick broadcast without saving numbers to your contacts list.</small>
                         </div>
 
-                        <hr class="my-4" style="border-color: var(--border-color);">
+                        <!-- Column Mapping Workspace (File Mode only) -->
+                        <div id="column-mapping-workspace">
+                            <hr class="my-4" style="border-color: var(--border-color);">
 
-                        <h6 class="fw-bold mb-3 text-secondary" style="font-size: 0.95rem;">
-                            <i class="bi bi-grid-3x3-gap me-2"></i> Column Mapping Workspace
-                        </h6>
+                            <h6 class="fw-bold mb-3 text-secondary" style="font-size: 0.95rem;">
+                                <i class="bi bi-grid-3x3-gap me-2"></i> Column Mapping Workspace
+                            </h6>
 
-                        <!-- Map Mobile Number -->
-                        <div class="row mb-3 align-items-center">
-                            <div class="col-sm-5">
-                                <label for="phone_column" class="form-label fw-semibold mb-sm-0">Mobile Number Column <span class="text-danger">*</span></label>
+                            <!-- Map Mobile Number -->
+                            <div class="row mb-3 align-items-center">
+                                <div class="col-sm-5">
+                                    <label for="phone_column" class="form-label fw-semibold mb-sm-0">Mobile Number Column <span class="text-danger">*</span></label>
+                                </div>
+                                <div class="col-sm-7">
+                                    <select name="phone_column" id="phone_column" class="form-select form-control-custom select-mapping">
+                                        <option value="" selected disabled>-- Select Column --</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-sm-7">
-                                <select name="phone_column" id="phone_column" class="form-select form-control-custom select-mapping" required>
-                                    <option value="" selected disabled>-- Select Column --</option>
-                                </select>
-                            </div>
-                        </div>
 
-                        <!-- Map Contact Name (Optional) -->
-                        <div class="row mb-4 align-items-center">
-                            <div class="col-sm-5">
-                                <label for="name_column" class="form-label fw-semibold mb-sm-0">Recipient Name Column <span class="text-muted">(Optional)</span></label>
-                            </div>
-                            <div class="col-sm-7">
-                                <select name="name_column" id="name_column" class="form-select form-control-custom select-mapping">
-                                    <option value="" selected>-- Use Default Name (Guest) --</option>
-                                </select>
+                            <!-- Map Contact Name (Optional) -->
+                            <div class="row mb-4 align-items-center">
+                                <div class="col-sm-5">
+                                    <label for="name_column" class="form-label fw-semibold mb-sm-0">Recipient Name Column <span class="text-muted">(Optional)</span></label>
+                                </div>
+                                <div class="col-sm-7">
+                                    <select name="name_column" id="name_column" class="form-select form-control-custom select-mapping">
+                                        <option value="" selected>-- Use Default Name (Guest) --</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -233,7 +309,7 @@
                             </select>
                         </div>
 
-                        <!-- Template Header Media Attachment (Visible only when template requires it) -->
+                        <!-- Template Header Media Attachment -->
                         <div class="mb-4 d-none" id="header-media-wrapper">
                             <label class="form-label fw-semibold" id="header-media-label">Template Header Attachment</label>
                             <div class="p-3 border rounded" style="background-color: var(--background-color); border-radius: var(--border-radius-md); border-color: var(--border-color) !important;">
@@ -253,11 +329,11 @@
 
                         <!-- Dynamic Variable Inputs -->
                         <div class="mb-4 d-none" id="variables-wrapper">
-                            <label class="form-label fw-semibold">Map Template Variables to Columns</label>
+                            <label class="form-label fw-semibold" id="variables-wrapper-label">Map Template Variables</label>
                             <div class="p-3 border rounded" style="background-color: var(--background-color); border-radius: var(--border-radius-md); border-color: var(--border-color) !important;">
-                                <small class="text-muted d-block mb-3">
+                                <small class="text-muted d-block mb-3" id="variables-wrapper-help">
                                     <i class="bi bi-info-circle-fill text-primary"></i> 
-                                    For each template placeholder, select the Excel/CSV column that contains the value.
+                                    For each template placeholder, specify the value or attribute mapping.
                                 </small>
                                 <div class="d-flex flex-column gap-3" id="variables-inputs-container">
                                     <!-- Populated dynamically via JS -->
@@ -268,7 +344,7 @@
                         <!-- Submit Broadcast -->
                         <div class="mt-4 pt-3 border-top" style="border-color: var(--border-color) !important;">
                             <button type="submit" class="btn btn-primary-custom w-100 py-2.5" style="border-radius: var(--border-radius-md); font-weight: 700;">
-                                <i class="bi bi-rocket-takeoff-fill me-2"></i> Launch Broadcast to <span id="btn-row-count">0</span> Recipients
+                                <i class="bi bi-rocket-takeoff-fill me-2"></i> Launch Broadcast to <span id="btn-target-count">0</span> Recipients
                             </button>
                         </div>
                     </form>
@@ -311,6 +387,7 @@
 @section('scripts')
 <script>
     let fileColumns = [];
+    let currentSource = 'file';
 
     $(document).ready(function() {
         // Toggle Sidebar
@@ -318,121 +395,129 @@
             $('#dashboard-sidebar').toggleClass('show');
         });
 
-        // Trigger file input click
-        $('#drag-drop-zone').on('click', function() {
-            $('#file-input').click();
+        // Source Tab Switching (File vs Group)
+        $('.source-tab-btn').on('click', function() {
+            $('.source-tab-btn').removeClass('active');
+            $(this).addClass('active');
+
+            currentSource = $(this).data('source');
+            $('#source_type').val(currentSource);
+
+            if (currentSource === 'file') {
+                $('#file-source-zone').removeClass('d-none');
+                $('#group-source-zone').addClass('d-none');
+                $('#save-contacts-wrapper').removeClass('d-none');
+                $('#column-mapping-workspace').removeClass('d-none');
+                $('#phone_column').prop('required', true);
+
+                if ($('#hidden-filepath').val()) {
+                    $('#configuration-card').removeClass('d-none');
+                } else {
+                    $('#configuration-card').addClass('d-none');
+                }
+            } else {
+                $('#file-source-zone').addClass('d-none');
+                $('#group-source-zone').removeClass('d-none');
+                $('#save-contacts-wrapper').addClass('d-none');
+                $('#column-mapping-workspace').addClass('d-none');
+                $('#phone_column').prop('required', false);
+
+                if ($('#contact_group_id_select').val()) {
+                    $('#configuration-card').removeClass('d-none');
+                } else {
+                    $('#configuration-card').addClass('d-none');
+                }
+            }
+            updateVariableMappingFields();
         });
 
-        // Drag and drop events
-        const dropZone = document.getElementById('drag-drop-zone');
+        // Contact Group Select Listener
+        $('#contact_group_id_select').on('change', function() {
+            const selectedOpt = $(this).find('option:selected');
+            const groupId = $(this).val();
+            const groupName = selectedOpt.data('name');
+            const groupCount = selectedOpt.data('count');
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            $('#drag-drop-zone').addClass('dragover');
-        });
+            if (groupId) {
+                $('#hidden-contact-group-id').val(groupId);
+                $('#loaded-group-name').text(groupName);
+                $('#loaded-group-count').text(`${groupCount} contacts target`);
+                $('#btn-target-count').text(groupCount);
+                $('#group-preview-card').removeClass('d-none');
+                $('#configuration-card').removeClass('d-none');
 
-        dropZone.addEventListener('dragleave', () => {
-            $('#drag-drop-zone').removeClass('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            $('#drag-drop-zone').removeClass('dragover');
-            
-            if (e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
-                uploadAndParseFile(file);
+                if (!$('#campaign_name').val() || $('#campaign_name').val().startsWith('Group Broadcast -')) {
+                    $('#campaign_name').val(`Group Broadcast - ${groupName}`);
+                }
+                updateVariableMappingFields();
             }
         });
 
-        // File input change
-        $('#file-input').on('change', function() {
+        // Drag & Drop File Upload Handlers
+        const dropZone = $('#drag-drop-zone');
+        const fileInput = $('#file-input');
+
+        dropZone.on('click', function() {
+            fileInput.click();
+        });
+
+        dropZone.on('dragover dragenter', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.addClass('dragover');
+        });
+
+        dropZone.on('dragleave drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.removeClass('dragover');
+        });
+
+        dropZone.on('drop', function(e) {
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                uploadAndParseFile(files[0]);
+            }
+        });
+
+        fileInput.on('change', function() {
             if (this.files.length > 0) {
                 uploadAndParseFile(this.files[0]);
             }
         });
 
-        // Remove file
+        // Remove uploaded file
         $('#remove-file-btn').on('click', function() {
-            Notiflix.Confirm.show(
-                'Remove File',
-                'Are you sure you want to remove the uploaded file?',
-                'Yes, Remove',
-                'Cancel',
-                function() {
-                    $('#hidden-filepath').val('');
-                    $('#file-input').val('');
-                    $('#file-preview-card').addClass('d-none');
-                    $('#drag-drop-zone').removeClass('d-none');
-                    $('#configuration-card').addClass('d-none');
-                    fileColumns = [];
-                    $('.select-mapping').html('<option value="" selected disabled>-- Select Column --</option>');
-                    $('#name_column').prepend('<option value="" selected>-- Use Default Name (Guest) --</option>');
-                },
-                null,
-                {
-                    okButtonBackground: 'var(--danger-color)',
-                    titleColor: 'var(--text-primary)',
-                    messageColor: 'var(--text-secondary)',
-                    backgroundColor: 'var(--card-background)'
-                }
-            );
+            $('#file-input').val('');
+            $('#hidden-filepath').val('');
+            $('#drag-drop-zone').removeClass('d-none');
+            $('#file-preview-card').addClass('d-none');
+            if (currentSource === 'file') {
+                $('#configuration-card').addClass('d-none');
+            }
+            fileColumns = [];
         });
 
-        // Handle Template selection change
+        // Template Selection Listener
         $('#template_id').on('change', function() {
             updateVariableMappingFields();
         });
 
-        // Real-time variable binding preview
-        $(document).on('change', '.variable-mapping-select', function() {
-            updateLivePreview();
-        });
-
-        // Toggle between select (column mapping) and text input (fixed value)
-        $(document).on('click', '.toggle-var-input', function() {
-            const id = $(this).data('id');
-            const wrapper = $(`.var-input-wrapper[data-id="${id}"]`);
-            const selectEl = wrapper.find('.variable-mapping-select');
-            const inputEl = wrapper.find('.variable-value-input');
-
-            if (selectEl.hasClass('d-none')) {
-                selectEl.removeClass('d-none').prop('required', true);
-                inputEl.addClass('d-none').prop('required', false).val('');
-                $(this).text('Use Fixed Value');
-            } else {
-                selectEl.addClass('d-none').prop('required', false).val('');
-                inputEl.removeClass('d-none').prop('required', true);
-                $(this).text('Map Column');
-            }
-            updateLivePreview();
-        });
-
-        // Trigger preview refresh on custom text input
-        $(document).on('input change', '.variable-value-input', function() {
-            updateLivePreview();
-        });
-
-        // Trigger preview refresh on media attachment text change
-        $('#header_attachment').on('input change', function() {
-            updateLivePreview();
-        });
-
-        // Handle media attachment file upload via AJAX
+        // Dynamic Header Media File Upload
         $('#header-media-file').on('change', function() {
-            if (this.files.length === 0) return;
-
             const file = this.files[0];
+            if (!file) return;
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('media_file', file);
+            formData.append('type', 'general');
             formData.append('_token', "{{ csrf_token() }}");
 
             const progressBarWrapper = $('#header-media-progress-bar');
             const progressBar = progressBarWrapper.find('.progress-bar');
-            
             progressBarWrapper.removeClass('d-none');
-            progressBar.css('width', '0%').attr('aria-valuenow', 0);
-            
+            progressBar.css('width', '0%');
+
             $.ajax({
                 url: "{{ route('media.store') }}",
                 type: 'POST',
@@ -441,10 +526,10 @@
                 contentType: false,
                 xhr: function() {
                     const xhr = new window.XMLHttpRequest();
-                    xhr.upload.addEventListener("progress", function(evt) {
+                    xhr.upload.addEventListener('progress', function(evt) {
                         if (evt.lengthComputable) {
                             const percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                            progressBar.css('width', percentComplete + '%').attr('aria-valuenow', percentComplete);
+                            progressBar.css('width', percentComplete + '%');
                         }
                     }, false);
                     return xhr;
@@ -469,6 +554,47 @@
                     Notiflix.Notify.failure(msg);
                 }
             });
+        });
+
+        // Header Attachment URL Input Change Listener
+        $('#header_attachment').on('input change', function() {
+            updateLivePreview();
+        });
+
+        // Variable Value Input & Selection Change Listeners
+        $(document).on('change input', '.variable-mapping-select, .variable-value-input, .group-var-input', function() {
+            updateLivePreview();
+        });
+
+        // Toggle Fixed Value vs Column select in File mode
+        $(document).on('click', '.toggle-var-input', function() {
+            const id = $(this).data('id');
+            const wrapper = $(`.var-input-wrapper[data-id="${id}"]`);
+            const selectEl = wrapper.find('.variable-mapping-select');
+            const inputEl = wrapper.find('.variable-value-input');
+
+            if (selectEl.hasClass('d-none')) {
+                selectEl.removeClass('d-none').prop('required', true);
+                inputEl.addClass('d-none').val('');
+                $(this).text('Use Fixed Value');
+            } else {
+                selectEl.addClass('d-none').prop('required', false).val('');
+                inputEl.removeClass('d-none');
+                $(this).text('Map to Column');
+            }
+            updateLivePreview();
+        });
+
+        // Click handler for helper tag buttons in Group mode (inserting name or mobile tags)
+        $(document).on('click', '.insert-tag-btn', function(e) {
+            e.preventDefault();
+            const tag = $(this).attr('data-tag') || $(this).data('tag');
+            const targetInput = $(this).closest('.border').find('.group-var-input');
+            if (targetInput.length && tag) {
+                const currentVal = targetInput.val();
+                const newVal = currentVal ? (currentVal + ' ' + tag) : tag;
+                targetInput.val(newVal).trigger('input').trigger('change');
+            }
         });
 
         // Submit form
@@ -527,7 +653,7 @@
                     // Update file details card
                     $('#loaded-filename').text(file.name);
                     $('#loaded-filecount').text(`Found ${response.total_rows} valid records for sending`);
-                    $('#btn-row-count').text(response.total_rows);
+                    $('#btn-target-count').text(response.total_rows);
                     
                     $('#hidden-filepath').val(response.filepath);
                     $('#drag-drop-zone').addClass('d-none');
@@ -663,40 +789,64 @@
         if (variableIds.length > 0) {
             $('#variables-wrapper').removeClass('d-none');
 
-            variableIds.forEach(id => {
-                let optionsHtml = '';
-                fileColumns.forEach(col => {
-                    optionsHtml += `<option value="${col}">${col}</option>`;
-                });
+            if (currentSource === 'group') {
+                $('#variables-wrapper-label').text('Configure Template Variables for Group Broadcast');
+                $('#variables-wrapper-help').html('<i class="bi bi-info-circle-fill text-primary"></i> Enter custom values or use <code>@{{name}}</code> / <code>@{{mobile}}</code> tags for recipient details.');
 
-                const selectHtml = `
-                    <div class="row align-items-center mb-3">
-                        <div class="col-sm-5 d-flex justify-content-between align-items-center pr-2">
-                            <label class="form-label fw-bold mb-0 small text-muted">Placeholder Variable ${'{'}${'{'}${id}${'}'}${'}'}</label>
-                            <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none toggle-var-input" data-id="${id}" style="font-size: 0.72rem; color: var(--primary-color);">Use Fixed Value</button>
+                variableIds.forEach(id => {
+                    const inputHtml = `
+                        <div class="p-3 border rounded mb-2" style="background-color: var(--card-background); border-radius: var(--border-radius-sm);">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold mb-0 small text-primary">Variable ${'{'}${'{'}${id}${'}'}${'}'}</label>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-xs btn-outline-secondary insert-tag-btn" data-tag="@{{name}}" style="font-size: 0.72rem; padding: 0.15rem 0.45rem;">+ Contact Name</button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary insert-tag-btn" data-tag="@{{mobile}}" style="font-size: 0.72rem; padding: 0.15rem 0.45rem;">+ Mobile Number</button>
+                                </div>
+                            </div>
+                            <input type="text" name="variable_values[${id}]" class="form-control form-control-sm form-control-custom group-var-input" data-id="${id}" placeholder="Enter text or tag e.g. Hi @{{name}}">
                         </div>
-                        <div class="col-sm-7 var-input-wrapper" data-id="${id}">
-                            <select name="variable_mappings[${id}]" class="form-select form-select-sm form-control-custom variable-mapping-select" data-id="${id}" required>
-                                <option value="" selected disabled>-- Map to Column --</option>
-                                ${optionsHtml}
-                            </select>
-                            <input type="text" name="variable_values[${id}]" class="form-control form-control-sm form-control-custom variable-value-input d-none" data-id="${id}" placeholder="Enter custom value...">
-                        </div>
-                    </div>
-                `;
-                container.append(selectHtml);
-            });
-            
-            // Try to auto-map based on indexing or typical patterns
-            $('.variable-mapping-select').each(function(index) {
-                const id = $(this).data('id');
-                fileColumns.forEach(col => {
-                    const lower = col.toLowerCase();
-                    if (lower === `var${id}` || lower === `variable${id}` || lower === `val${id}` || lower === `value${id}`) {
-                        $(this).val(col);
-                    }
+                    `;
+                    container.append(inputHtml);
                 });
-            });
+            } else {
+                $('#variables-wrapper-label').text('Map Template Variables to Columns');
+                $('#variables-wrapper-help').html('<i class="bi bi-info-circle-fill text-primary"></i> For each template placeholder, select the Excel/CSV column that contains the value.');
+
+                variableIds.forEach(id => {
+                    let optionsHtml = '';
+                    fileColumns.forEach(col => {
+                        optionsHtml += `<option value="${col}">${col}</option>`;
+                    });
+
+                    const selectHtml = `
+                        <div class="row align-items-center mb-3">
+                            <div class="col-sm-5 d-flex justify-content-between align-items-center pr-2">
+                                <label class="form-label fw-bold mb-0 small text-muted">Placeholder Variable ${'{'}${'{'}${id}${'}'}${'}'}</label>
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none toggle-var-input" data-id="${id}" style="font-size: 0.72rem; color: var(--primary-color);">Use Fixed Value</button>
+                            </div>
+                            <div class="col-sm-7 var-input-wrapper" data-id="${id}">
+                                <select name="variable_mappings[${id}]" class="form-select form-select-sm form-control-custom variable-mapping-select" data-id="${id}" required>
+                                    <option value="" selected disabled>-- Map to Column --</option>
+                                    ${optionsHtml}
+                                </select>
+                                <input type="text" name="variable_values[${id}]" class="form-control form-control-sm form-control-custom variable-value-input d-none" data-id="${id}" placeholder="Enter custom value...">
+                            </div>
+                        </div>
+                    `;
+                    container.append(selectHtml);
+                });
+                
+                // Try to auto-map based on indexing or typical patterns
+                $('.variable-mapping-select').each(function(index) {
+                    const id = $(this).data('id');
+                    fileColumns.forEach(col => {
+                        const lower = col.toLowerCase();
+                        if (lower === `var${id}` || lower === `variable${id}` || lower === `val${id}` || lower === `value${id}`) {
+                            $(this).val(col);
+                        }
+                    });
+                });
+            }
             
             updateLivePreview();
         } else {
@@ -718,24 +868,32 @@
             }
         });
 
-        // Replace variable templates in preview with mapped column labels or custom values
-        $('.variable-mapping-select').each(function() {
-            const id = $(this).data('id');
-            const selectEl = $(this);
-            const inputEl = selectEl.siblings('.variable-value-input');
-            
-            let replaceVal = '{' + '{' + id + '}' + '}';
-            
-            if (!selectEl.hasClass('d-none')) {
-                const mappedCol = selectEl.val();
-                replaceVal = mappedCol ? `[${mappedCol}]` : '{' + '{' + id + '}' + '}';
-            } else {
-                const customVal = inputEl.val();
-                replaceVal = customVal ? customVal : '{' + '{' + id + '}' + '}';
-            }
-            
-            bodyText = bodyText.replace(new RegExp('\\\\{\\\\{' + id + '\\\\}\\\\}', 'g'), replaceVal);
-        });
+        if (currentSource === 'group') {
+            $('.group-var-input').each(function() {
+                const id = $(this).data('id');
+                const customVal = $(this).val();
+                const replaceVal = customVal ? customVal : '{' + '{' + id + '}' + '}';
+                bodyText = bodyText.replace(new RegExp('\\\\{\\\\{' + id + '\\\\}\\\\}', 'g'), replaceVal);
+            });
+        } else {
+            $('.variable-mapping-select').each(function() {
+                const id = $(this).data('id');
+                const selectEl = $(this);
+                const inputEl = selectEl.siblings('.variable-value-input');
+                
+                let replaceVal = '{' + '{' + id + '}' + '}';
+                
+                if (!selectEl.hasClass('d-none')) {
+                    const mappedCol = selectEl.val();
+                    replaceVal = mappedCol ? `[${mappedCol}]` : '{' + '{' + id + '}' + '}';
+                } else {
+                    const customVal = inputEl.val();
+                    replaceVal = customVal ? customVal : '{' + '{' + id + '}' + '}';
+                }
+                
+                bodyText = bodyText.replace(new RegExp('\\\\{\\\\{' + id + '\\\\}\\\\}', 'g'), replaceVal);
+            });
+        }
 
         $('#preview-bubble-body').text(bodyText);
         $('#preview-sender-name').text(selectedOpt.text().trim().split(' ')[0]);

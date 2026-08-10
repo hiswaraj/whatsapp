@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Contact;
+use App\Models\ContactGroup;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Template;
@@ -42,7 +43,13 @@ class QuickBroadcastController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
-        return view('user.quick-broadcast.index', compact('wabas', 'templates'));
+        // Contact Groups
+        $groups = ContactGroup::where('user_id', $userId)
+            ->withCount('contacts')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return view('user.quick-broadcast.index', compact('wabas', 'templates', 'groups'));
     }
 
     /**
@@ -193,22 +200,34 @@ class QuickBroadcastController extends Controller
     /**
      * Process configuration and create quick broadcast campaign with pending messages.
      */
+    /**
+     * Process configuration and create quick broadcast campaign with pending messages.
+     */
     public function send(Request $request): JsonResponse
     {
         $userId = Auth::id();
+        $sourceType = $request->input('source_type', 'file');
 
-        $validation = Validator::make($request->all(), [
-            'filepath' => 'required|string',
+        $rules = [
+            'source_type' => 'required|in:file,group',
             'whatsapp_account_id' => 'required|exists:whatsapp_accounts,id,user_id,' . $userId,
             'template_id' => 'required|exists:templates,id,user_id,' . $userId,
             'campaign_name' => 'required|string|max:255',
-            'save_contacts' => 'nullable|boolean',
-            'phone_column' => 'required|string',
-            'name_column' => 'nullable|string',
             'variable_mappings' => 'nullable|array',
             'variable_values' => 'nullable|array',
             'header_attachment' => 'nullable|string'
-        ]);
+        ];
+
+        if ($sourceType === 'group') {
+            $rules['contact_group_id'] = 'required|exists:contact_groups,id,user_id,' . $userId;
+        } else {
+            $rules['filepath'] = 'required|string';
+            $rules['phone_column'] = 'required|string';
+            $rules['save_contacts'] = 'nullable|boolean';
+            $rules['name_column'] = 'nullable|string';
+        }
+
+        $validation = Validator::make($request->all(), $rules);
 
         if ($validation->fails()) {
             return response()->json([
@@ -218,6 +237,132 @@ class QuickBroadcastController extends Controller
         }
 
         $validated = $validation->validated();
+
+        if ($sourceType === 'group') {
+            return $this->sendGroupBroadcast($request, $validated, $userId);
+        } else {
+            return $this->sendFileBroadcast($request, $validated, $userId);
+        }
+    }
+
+    /**
+     * Dispatch broadcast targeting a specific Contact Group.
+     */
+    protected function sendGroupBroadcast(Request $request, array $validated, int $userId): JsonResponse
+    {
+        try {
+            $group = ContactGroup::where('user_id', $userId)->with('contacts')->findOrFail($validated['contact_group_id']);
+            $contacts = $group->contacts;
+
+            if ($contacts->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The selected contact group "' . $group->name . '" has no saved contacts.'
+                ], 422);
+            }
+
+            $template = Template::where('user_id', $userId)->findOrFail($validated['template_id']);
+            $waba = WhatsappAccount::where('user_id', $userId)->findOrFail($validated['whatsapp_account_id']);
+
+            $variableValues = $request->input('variable_values') ?? [];
+            $templateVariables = [];
+            foreach ($variableValues as $idx => $val) {
+                $templateVariables[] = 'Custom: ' . ($val ?? '');
+            }
+
+            // Create Campaign
+            $campaign = Campaign::create([
+                'user_id' => $userId,
+                'whatsapp_account_id' => $waba->id,
+                'template_id' => $template->id,
+                'contact_group_id' => $group->id,
+                'name' => $validated['campaign_name'],
+                'status' => 'processing',
+                'scheduled_at' => null,
+                'template_variables' => $templateVariables,
+                'total_contacts' => $contacts->count(),
+                'sent_count' => 0,
+                'delivered_count' => 0,
+                'read_count' => 0,
+                'failed_count' => 0
+            ]);
+
+            foreach ($contacts as $contact) {
+                $conversation = Conversation::firstOrCreate([
+                    'user_id' => $userId,
+                    'whatsapp_account_id' => $waba->id,
+                    'contact_id' => $contact->id
+                ], [
+                    'last_message_at' => now(),
+                    'unread_count' => 0
+                ]);
+
+                // Resolve variable parameters for this contact
+                $templateParams = [];
+                foreach ($variableValues as $idx => $val) {
+                    $paramVal = $val ?? '';
+                    $paramVal = str_replace('{{name}}', $contact->name, $paramVal);
+                    $paramVal = str_replace('{{mobile}}', $contact->mobile_number, $paramVal);
+                    $templateParams[] = $paramVal;
+                }
+
+                // Compile body text locally
+                $bodyText = '';
+                foreach ($template->components as $comp) {
+                    if (($comp['type'] ?? '') === 'BODY') {
+                        $bodyText = $comp['text'] ?? '';
+                    }
+                }
+                foreach ($templateParams as $idx => $paramVal) {
+                    $bodyText = str_replace('{{' . ($idx + 1) . '}}', $paramVal, $bodyText);
+                }
+
+                // Pre-create the pending message
+                Message::create([
+                    'user_id' => $userId,
+                    'conversation_id' => $conversation->id,
+                    'campaign_id' => $campaign->id,
+                    'whatsapp_account_id' => $waba->id,
+                    'type' => 'outgoing',
+                    'message_type' => 'template',
+                    'body' => $bodyText,
+                    'meta_template_id' => $template->meta_template_id,
+                    'status' => 'pending',
+                    'template_params' => $templateParams,
+                    'media_path' => $request->input('header_attachment')
+                ]);
+            }
+
+            // Trigger campaign queue processor immediately
+            try {
+                Artisan::call('campaigns:process');
+            } catch (Exception $e) {
+                try {
+                    Artisan::queue('campaigns:process');
+                } catch (Exception $ex) {
+                    Log::warning('Quick broadcast dispatch warning: ' . $ex->getMessage());
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Group Broadcast scheduled and starting to send to ' . $contacts->count() . ' contacts!',
+                'redirect_url' => route('campaigns.show', $campaign->id)
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error processing group broadcast: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while scheduling group broadcast: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Dispatch broadcast targeting uploaded Excel file.
+     */
+    protected function sendFileBroadcast(Request $request, array $validated, int $userId): JsonResponse
+    {
         $absolutePath = Storage::path($validated['filepath']);
 
         if (!file_exists($absolutePath)) {
