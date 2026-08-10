@@ -227,7 +227,34 @@
         text-align: center;
     }
     
-    /* Messages area */
+    /* Messages area and GPU acceleration */
+    .chat-threads-list,
+    .chat-messages-container {
+        transform: translateZ(0);
+        will-change: scroll-position;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Custom smooth React-like scrollbars */
+    .chat-threads-list::-webkit-scrollbar,
+    .chat-messages-container::-webkit-scrollbar {
+        width: 5px;
+    }
+    .chat-threads-list::-webkit-scrollbar-track,
+    .chat-messages-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .chat-threads-list::-webkit-scrollbar-thumb,
+    .chat-messages-container::-webkit-scrollbar-thumb {
+        background-color: rgba(148, 163, 184, 0.3);
+        border-radius: 999px;
+    }
+    .chat-threads-list::-webkit-scrollbar-thumb:hover,
+    .chat-messages-container::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(148, 163, 184, 0.6);
+    }
+    
     .chat-messages-container {
         flex: 1;
         overflow-y: auto;
@@ -243,6 +270,13 @@
         flex-direction: column;
         max-width: 70%;
         width: fit-content;
+        transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+        animation: popBubble 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popBubble {
+        0% { opacity: 0; transform: scale(0.96) translateY(4px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     
     .chat-bubble-wrapper.outgoing {
@@ -840,6 +874,10 @@
             renderWorkspaceSkeleton();
         }
 
+        let lastThreadsHash = '';
+        let lastMessagesHash = {};
+        let searchDebounceTimer = null;
+
         // Fetch conversation list and update sidebar UI
         function fetchConversations(isFirstLoad = false) {
             const wabaId = $('#waba-chat-filter').val() || '';
@@ -872,11 +910,10 @@
             });
         }
 
-        // Render Sidebar List
-        function renderConversationsList() {
+        // Render Sidebar List with state hashing to prevent unnecessary repaints
+        function renderConversationsList(forceRender = false) {
             const searchQuery = $('#contact-search').val().toLowerCase().trim();
             const container = $('#threads-container');
-            container.empty();
 
             const filtered = conversationsList.filter(function(conv) {
                 const name = conv.contact.name.toLowerCase();
@@ -884,37 +921,49 @@
                 return name.includes(searchQuery) || number.includes(searchQuery);
             });
 
+            // State signature hash comparison
+            const currentHash = searchQuery + '|' + activeConversationId + '|' + JSON.stringify(filtered.map(c => [
+                c.id, 
+                c.unread_count, 
+                c.last_message ? c.last_message.id : 0, 
+                c.last_message_at,
+                c.contact.name,
+                c.contact.avatar_url
+            ]));
+
+            if (!forceRender && currentHash === lastThreadsHash) {
+                return; // Nothing changed, skip DOM repaints!
+            }
+            lastThreadsHash = currentHash;
+
             if (filtered.length === 0) {
-                container.append('<li class="text-center py-5 text-muted small">No conversations found</li>');
+                container.html('<li class="text-center py-5 text-muted small">No conversations found</li>');
                 return;
             }
 
-            filtered.forEach(function(conv) {
+            const htmlArr = filtered.map(function(conv) {
                 const isActive = (conv.id === activeConversationId) ? 'active' : '';
                 const unreadBadge = conv.unread_count > 0 ? `<span class="chat-unread-badge">${conv.unread_count}</span>` : '';
                 
-                // Format message snippet
                 let lastMsgText = 'No messages yet';
                 if (conv.last_message) {
                     lastMsgText = conv.last_message.body || '[Media/Attachment]';
                 }
 
-                // Format timestamp
                 let timeStr = '';
                 if (conv.last_message_at) {
                     const date = new Date(conv.last_message_at);
                     timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
 
-                const initials = conv.contact.name.substring(0, 1).toUpperCase();
                 let avatarHtml = '';
                 if (conv.contact.avatar_url) {
-                    avatarHtml = `<img src="${window.location.origin}/${conv.contact.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    avatarHtml = `<img src="${window.location.origin}/${conv.contact.avatar_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" loading="lazy">`;
                 } else {
-                    avatarHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(conv.contact.name)}&background=random&color=fff&size=128" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    avatarHtml = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(conv.contact.name)}&background=random&color=fff&size=128" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" loading="lazy">`;
                 }
 
-                const html = `
+                return `
                     <li class="chat-thread-item ${isActive}" data-id="${conv.id}">
                         <div class="chat-avatar">${avatarHtml}</div>
                         <div class="chat-thread-info">
@@ -923,19 +972,23 @@
                                 <span class="chat-thread-time">${timeStr}</span>
                             </div>
                             <div class="chat-thread-body-wrapper">
-                                <p class="chat-thread-snippet">${lastMsgText}</p>
+                                <p class="chat-thread-snippet">${$('<div>').text(lastMsgText).html()}</p>
                                 ${unreadBadge}
                             </div>
                         </div>
                     </li>
                 `;
-                container.append(html);
             });
+
+            container.html(htmlArr.join(''));
         }
 
-        // Search conversations listener
+        // Debounced search conversations listener
         $('#contact-search').on('keyup input', function() {
-            renderConversationsList();
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+                renderConversationsList(true);
+            }, 120);
         });
 
         // WABA filter change listener
@@ -1206,7 +1259,7 @@
             clearTemplateHeaderMedia();
         });
 
-        // Fetch Messages for open chat
+        // Fetch Messages for open chat with state diffing
         function fetchMessages(convId, isQuietPoll = false) {
             $.ajax({
                 url: `/chat/conversations/${convId}/messages`,
@@ -1271,12 +1324,12 @@
                         const feed = $('#chat-messages-feed');
                         const isAtBottom = feed.scrollTop() + feed.innerHeight() >= feed[0].scrollHeight - 50;
 
-                        // Render messages
-                        renderMessagesFeed(response.messages);
+                        // Render messages smartly
+                        renderMessagesFeed(response.messages, isQuietPoll);
 
                         // If it's a first load or user was at bottom, scroll down
                         if (!isQuietPoll || isAtBottom) {
-                            scrollToBottom();
+                            scrollToBottom(isQuietPoll);
                         }
                     }
                 },
@@ -1291,32 +1344,36 @@
             $('#chat-countdown-timer').text(`${h}:${m}:${s}`);
         }
 
-        // Render Chat Feed Bubbles
-        function renderMessagesFeed(messages) {
+        // Render Chat Feed Bubbles with DOM diffing & quiet update support
+        function renderMessagesFeed(messages, isQuietPoll = false) {
             const feed = $('#chat-messages-feed');
-            feed.empty();
+            
+            const currentHash = JSON.stringify(messages.map(m => [m.id, m.status, m.updated_at, m.body, m.media_path]));
+            if (isQuietPoll && lastMessagesHash[activeConversationId] === currentHash) {
+                return; // Nothing changed, prevent feed re-render!
+            }
+            lastMessagesHash[activeConversationId] = currentHash;
 
             if (messages.length === 0) {
-                feed.append('<div class="chat-divider">No messages. Send a message to start conversation.</div>');
+                feed.html('<div class="chat-divider">No messages. Send a message to start conversation.</div>');
                 return;
             }
 
+            let htmlArr = [];
             let lastDate = '';
 
             messages.forEach(function(msg) {
-                // Parse date divider
                 const date = new Date(msg.created_at);
                 const dateString = date.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 
                 if (dateString !== lastDate) {
-                    feed.append(`<div class="chat-divider">${dateString}</div>`);
+                    htmlArr.push(`<div class="chat-divider">${dateString}</div>`);
                     lastDate = dateString;
                 }
 
                 const isOutgoing = msg.type === 'outgoing';
                 const wrapperClass = isOutgoing ? 'outgoing' : 'incoming';
                 
-                // Format checkmark ticks for outgoing messages
                 let ticks = '';
                 if (isOutgoing) {
                     if (msg.status === 'read') {
@@ -1328,13 +1385,12 @@
                     } else if (msg.status === 'failed') {
                         ticks = '<i class="bi bi-exclamation-circle-fill status-tick failed" title="Failed"></i>';
                     } else {
-                        ticks = '<i class="bi bi-clock status-tick text-muted" title="Pending"></i>';
+                        ticks = '<i class="bi bi-clock status-tick text-muted" title="Sending..."></i>';
                     }
                 }
 
                 const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                // Construct message body with HTML escape
                 let messageBody = '';
                 if (msg.media_path) {
                     const mediaUrl = window.location.origin + '/' + msg.media_path;
@@ -1370,34 +1426,40 @@
                         messageBody += `<div class="mt-2 text-wrap">${textBody}</div>`;
                     }
                 } else {
-                    messageBody = $('<div>').text(msg.body).html();
+                    messageBody = $('<div>').text(msg.body || '').html();
                     messageBody = messageBody.replace(/\n/g, '<br>');
                 }
 
-                const bubbleHtml = `
-                    <div class="chat-bubble-wrapper ${wrapperClass}">
+                htmlArr.push(`
+                    <div class="chat-bubble-wrapper ${wrapperClass}" id="msg-bubble-${msg.id}">
                         <div class="chat-bubble">
                             <div class="chat-body">${messageBody}</div>
                             <div class="chat-meta">
                                 <span>${timeStr}</span>
-                                ${ticks}
+                                <span id="msg-tick-${msg.id}">${ticks}</span>
                             </div>
                         </div>
                     </div>
-                `;
-                feed.append(bubbleHtml);
+                `);
             });
+
+            // Fast innerHTML update
+            feed.html(htmlArr.join(''));
         }
 
-        // Scroll feed to bottom
-        function scrollToBottom() {
+        // Smooth Scroll feed to bottom
+        function scrollToBottom(smooth = false) {
             const feed = $('#chat-messages-feed');
             if (feed.length) {
-                feed.scrollTop(feed[0].scrollHeight);
+                if (smooth && feed[0].scrollTo) {
+                    feed[0].scrollTo({ top: feed[0].scrollHeight, behavior: 'smooth' });
+                } else {
+                    feed.scrollTop(feed[0].scrollHeight);
+                }
             }
         }
 
-        // Send Text Message
+        // Optimistic Send Text Message
         function sendTextMessage() {
             const form = $('#send-chat-msg-form');
             const textarea = $('.chat-input-field');
@@ -1405,7 +1467,29 @@
             const mediaId = $('#chat-media-id').val();
             if (!body && !mediaId) return;
 
-            // Clear input immediately for optimal snappy feedback
+            const tempId = 'temp-' + Date.now();
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const safeText = $('<div>').text(body).html().replace(/\n/g, '<br>');
+
+            // Optimistic bubble rendering for instant feedback
+            const optimisticBubble = `
+                <div class="chat-bubble-wrapper outgoing" id="msg-bubble-${tempId}">
+                    <div class="chat-bubble">
+                        <div class="chat-body">${safeText}</div>
+                        <div class="chat-meta">
+                            <span>${timeStr}</span>
+                            <span id="msg-tick-${tempId}"><i class="bi bi-clock status-tick text-muted" title="Sending..."></i></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const feed = $('#chat-messages-feed');
+            feed.find('.chat-divider:contains("No messages")').remove();
+            feed.append(optimisticBubble);
+            scrollToBottom(true);
+
+            // Clear input field immediately for React-like instant responsiveness
             const formData = form.serialize();
             textarea.val('');
             clearChatAttachment();
@@ -1417,19 +1501,21 @@
                 dataType: "json",
                 success: function(response) {
                     if (response.status) {
-                        fetchMessages(activeConversationId);
+                        $(`#msg-tick-${tempId}`).html('<i class="bi bi-check2 status-tick" title="Sent"></i>');
+                        fetchMessages(activeConversationId, true);
                         fetchConversations();
+                    } else {
+                        $(`#msg-tick-${tempId}`).html('<i class="bi bi-exclamation-circle-fill status-tick failed" title="Failed"></i>');
+                        Notiflix.Notify.failure(response.message || 'Failed to send message.');
                     }
                 },
                 error: function(xhr) {
+                    $(`#msg-tick-${tempId}`).html('<i class="bi bi-exclamation-circle-fill status-tick failed" title="Failed"></i>');
                     let msg = 'Failed to dispatch message.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         msg = xhr.responseJSON.message;
                     }
                     Notiflix.Notify.failure(msg);
-                    
-                    // Restore body text on fail
-                    textarea.val(body);
                 }
             });
         }
