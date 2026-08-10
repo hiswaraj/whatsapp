@@ -177,7 +177,7 @@ class CampaignController extends Controller
         $campaign = Campaign::where('user_id', $userId)->findOrFail($id);
 
         $validation = Validator::make($request->all(), [
-            'action' => 'required|string|in:pause,resume,cancel,process_now'
+            'action' => 'required|string|in:pause,resume,cancel,process_now,resend_failed'
         ]);
 
         if ($validation->fails()) {
@@ -189,7 +189,42 @@ class CampaignController extends Controller
 
         $action = $request->input('action');
 
-        if ($action === 'process_now') {
+        if ($action === 'resend_failed') {
+            $failedMessages = Message::where('campaign_id', $campaign->id)
+                ->where('status', 'failed')
+                ->get();
+
+            if ($failedMessages->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No failed messages found in this campaign.'
+                ], 422);
+            }
+
+            foreach ($failedMessages as $msg) {
+                $msg->update([
+                    'status' => 'pending',
+                    'error_message' => null
+                ]);
+            }
+
+            $campaign->update([
+                'failed_count' => max(0, $campaign->failed_count - $failedMessages->count()),
+                'status' => 'processing'
+            ]);
+
+            try {
+                Artisan::call('campaigns:process');
+                $msg = 'Resend triggered for ' . $failedMessages->count() . ' failed message(s)!';
+            } catch (\Exception $e) {
+                try {
+                    Artisan::queue('campaigns:process');
+                    $msg = 'Resend queued for processing.';
+                } catch (\Exception $ex) {
+                    $msg = 'Failed to execute resend command: ' . $ex->getMessage();
+                }
+            }
+        } elseif ($action === 'process_now') {
             if (in_array($campaign->status, ['cancelled', 'failed'])) {
                 return response()->json([
                     'status' => false,
@@ -253,6 +288,49 @@ class CampaignController extends Controller
             'status' => true,
             'message' => $msg,
             'campaign_status' => $campaign->status
+        ]);
+    }
+
+    /**
+     * Resend a single failed message by ID.
+     */
+    public function resendSingleMessage(int $messageId): JsonResponse
+    {
+        $userId = Auth::id();
+        $message = Message::where('user_id', $userId)
+            ->where('id', $messageId)
+            ->firstOrFail();
+
+        $campaign = $message->campaign;
+
+        // Reset message to pending
+        $message->update([
+            'status' => 'pending',
+            'error_message' => null
+        ]);
+
+        if ($campaign) {
+            if ($campaign->failed_count > 0) {
+                $campaign->decrement('failed_count');
+            }
+            if ($campaign->status !== 'processing') {
+                $campaign->update(['status' => 'processing']);
+            }
+        }
+
+        try {
+            Artisan::call('campaigns:process');
+        } catch (\Exception $e) {
+            try {
+                Artisan::queue('campaigns:process');
+            } catch (\Exception $ex) {
+                Log::warning('Resend single message error: ' . $ex->getMessage());
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Message queued for immediate re-sending!'
         ]);
     }
 
