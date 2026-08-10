@@ -19,6 +19,7 @@ class ContactsExport implements FromCollection, WithHeadings, WithMapping
     {
         return Contact::where('user_id', Auth::id())
             ->where('is_temporary', false)
+            ->with('groups')
             ->orderBy('name', 'asc')
             ->get();
     }
@@ -34,6 +35,7 @@ class ContactsExport implements FromCollection, WithHeadings, WithMapping
             'name',
             'mobile_number',
             'email',
+            'group_name',
             'tags',
             'notes'
         ];
@@ -47,12 +49,14 @@ class ContactsExport implements FromCollection, WithHeadings, WithMapping
      */
     public function map($contact): array
     {
+        $groupsRaw = $contact->groups->pluck('name')->implode(', ');
         $tagsRaw = is_array($contact->tags) ? implode(', ', $contact->tags) : '';
 
         return [
             $contact->name,
             $contact->mobile_number,
             $contact->email,
+            $groupsRaw,
             $tagsRaw,
             $contact->notes
         ];

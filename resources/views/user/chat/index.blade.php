@@ -13,6 +13,29 @@
         overflow: hidden;
         background-color: var(--card-background);
         box-shadow: var(--shadow-sm);
+        transition: var(--transition-fast);
+    }
+
+    /* Chat layout Fullscreen mode */
+    .chat-layout.is-fullscreen {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 99999 !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+    }
+    
+    :fullscreen .chat-layout,
+    :-webkit-full-screen .chat-layout,
+    :-moz-full-screen .chat-layout {
+        width: 100vw !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
+        border: none !important;
     }
     
     /* Left sidebar: conversations list */
@@ -513,86 +536,7 @@
 @section('content')
 <div class="dashboard-wrapper">
 
-    <!-- Responsive Mobile Toggler -->
-    <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle Sidebar">
-        <i class="bi bi-list" style="font-size: 1.4rem;"></i>
-    </button>
-
-    <!-- Sidebar Navigation -->
-    <aside class="dashboard-sidebar" id="dashboard-sidebar">
-        <a href="{{ route('user.dashboard') }}" class="sidebar-brand">
-            <div style="background-color: var(--primary-color); border-radius: 8px; padding: 6px; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
-                <i class="bi bi-whatsapp text-white" style="font-size: 1.1rem; line-height: 1;"></i>
-            </div>
-            <span>WhatsApp<span style="color: var(--primary-color);">SaaS</span></span>
-        </a>
-
-        <ul class="sidebar-menu">
-            <li>
-                <a href="{{ route('user.dashboard') }}" class="sidebar-menu-link">
-                    <i class="bi bi-grid"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('contacts.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-people"></i>
-                    <span>Contacts</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('groups.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-folder"></i>
-                    <span>Contact Groups</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('chat.index') }}" class="sidebar-menu-link active">
-                    <i class="bi bi-chat-dots"></i>
-                    <span>Live Chat</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('wabas.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-whatsapp"></i>
-                    <span>WABAs</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('templates.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>Templates</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('campaigns.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-send"></i>
-                    <span>Campaigns</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('media.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-image"></i>
-                    <span>Media Library</span>
-                </a>
-            </li>
-        </ul>
-
-        <div class="sidebar-footer">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <div style="background-color: var(--input-focus-shadow); color: var(--primary-color); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                    {{ substr(Auth::user()->name, 0, 1) }}
-                </div>
-                <div>
-                    <h6 class="mb-0" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">{{ Auth::user()->name }}</h6>
-                    <span class="text-muted" style="font-size: 0.75rem;">Tenant Client</span>
-                </div>
-            </div>
-            <button class="btn btn-outline-danger w-100 btn-sm py-2" id="logout-btn" style="border-radius: var(--border-radius-md); font-weight: 600;">
-                Log Out
-            </button>
-        </div>
-    </aside>
+    @include('layouts.sidebar', ['active' => 'chat'])
 
     <!-- Main Workspace -->
     <main class="dashboard-main">
@@ -601,10 +545,16 @@
                 <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.2rem;">WhatsApp Live Chat</h1>
                 <span class="text-muted" style="font-size: 0.85rem;">Converse in real-time with your contacts and trigger message templates</span>
             </div>
+            <div>
+                <button type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 px-3 py-2 chat-fullscreen-trigger" style="border-radius: var(--border-radius-md); font-weight: 600;">
+                    <i class="bi bi-arrows-fullscreen chat-fullscreen-icon"></i>
+                    <span class="chat-fullscreen-text">Full Screen Chat</span>
+                </button>
+            </div>
         </header>
 
         <!-- Live Chat Main Section -->
-        <section class="chat-layout fade-in-element">
+        <section class="chat-layout fade-in-element" id="chat-layout-container">
             
             <!-- Sidebar: Threads List -->
             <div class="chat-threads-sidebar">
@@ -1037,7 +987,10 @@
                             </div>
                         </div>
                     </div>
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 chat-fullscreen-trigger" title="Toggle Fullscreen Chat" style="border-radius: var(--border-radius-md); font-weight: 600;">
+                            <i class="bi bi-arrows-fullscreen chat-fullscreen-icon"></i>
+                        </button>
                         <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 fw-bold" id="trigger-template-btn">
                             <i class="bi bi-file-earmark-text"></i> Send Template
                         </button>
@@ -1953,6 +1906,49 @@
                 }
             });
         }
+
+        // Live Chat Specific Fullscreen Mode Toggle Handler
+        $(document).on('click', '.chat-fullscreen-trigger', function(e) {
+            e.preventDefault();
+            const chatElem = document.getElementById('chat-layout-container');
+            if (!chatElem) return;
+            
+            const isFs = !!(document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement || $('#chat-layout-container').hasClass('is-fullscreen'));
+
+            if (!isFs) {
+                if (chatElem.requestFullscreen) {
+                    chatElem.requestFullscreen().catch(() => $('#chat-layout-container').addClass('is-fullscreen'));
+                } else if (chatElem.webkitRequestFullscreen) {
+                    chatElem.webkitRequestFullscreen();
+                } else if (chatElem.msRequestFullscreen) {
+                    chatElem.msRequestFullscreen();
+                } else {
+                    $('#chat-layout-container').addClass('is-fullscreen');
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => $('#chat-layout-container').removeClass('is-fullscreen'));
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                $('#chat-layout-container').removeClass('is-fullscreen');
+            }
+        });
+
+        $(document).on('fullscreenchange webkitfullscreenchange mozfullscreenchange MSFullscreenChange', function() {
+            const isFullscreen = !!(document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+            if (isFullscreen) {
+                $('.chat-fullscreen-icon').removeClass('bi-arrows-fullscreen').addClass('bi-fullscreen-exit');
+                $('.chat-fullscreen-text').text('Exit Fullscreen');
+                $('#chat-layout-container').addClass('is-fullscreen');
+            } else {
+                $('.chat-fullscreen-icon').removeClass('bi-fullscreen-exit').addClass('bi-arrows-fullscreen');
+                $('.chat-fullscreen-text').text('Full Screen Chat');
+                $('#chat-layout-container').removeClass('is-fullscreen');
+            }
+        });
 
         // AJAX Logout handler
         $('#logout-btn').on('click', function() {

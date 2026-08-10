@@ -265,6 +265,8 @@
             customSvgCode: null
         });
 
+
+
         // Flash session notification handler
         @if(session('success'))
             Notiflix.Notify.success("{{ session('success') }}");

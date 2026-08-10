@@ -29,6 +29,7 @@ Route::namespace('App\\Http\\Controllers')->group(function () {
         Route::post('/contacts', 'ContactController@store')->name('contacts.store');
         Route::put('/contacts/{id}', 'ContactController@update')->name('contacts.update');
         Route::delete('/contacts/{id}', 'ContactController@destroy')->name('contacts.destroy');
+        Route::get('/contacts/sample', 'ContactController@downloadSample')->name('contacts.sample');
         Route::post('/contacts/import', 'ContactController@import')->name('contacts.import');
         Route::get('/contacts/export', 'ContactController@export')->name('contacts.export');
         Route::post('/contacts/{id}/sync-dp', 'ContactController@syncDp')->name('contacts.sync-dp');
@@ -38,6 +39,8 @@ Route::namespace('App\\Http\\Controllers')->group(function () {
         Route::post('/groups', 'ContactGroupController@store')->name('groups.store');
         Route::put('/groups/{id}', 'ContactGroupController@update')->name('groups.update');
         Route::delete('/groups/{id}', 'ContactGroupController@destroy')->name('groups.destroy');
+        Route::get('/groups/sample', 'ContactGroupController@downloadSample')->name('groups.sample');
+        Route::post('/groups/import', 'ContactGroupController@import')->name('groups.import');
         Route::post('/groups/assign', 'ContactGroupController@assignContacts')->name('groups.assign');
         Route::post('/groups/remove', 'ContactGroupController@removeContacts')->name('groups.remove');
 

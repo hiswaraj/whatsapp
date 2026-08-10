@@ -28,86 +28,7 @@
 @section('content')
 <div class="dashboard-wrapper">
 
-    <!-- Responsive Mobile Toggler -->
-    <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle Sidebar">
-        <i class="bi bi-list" style="font-size: 1.4rem;"></i>
-    </button>
-
-    <!-- Sidebar Navigation -->
-    <aside class="dashboard-sidebar" id="dashboard-sidebar">
-        <a href="{{ route('user.dashboard') }}" class="sidebar-brand">
-            <div style="background-color: var(--primary-color); border-radius: 8px; padding: 6px; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
-                <i class="bi bi-whatsapp text-white" style="font-size: 1.1rem; line-height: 1;"></i>
-            </div>
-            <span>WhatsApp<span style="color: var(--primary-color);">SaaS</span></span>
-        </a>
-
-        <ul class="sidebar-menu">
-            <li>
-                <a href="{{ route('user.dashboard') }}" class="sidebar-menu-link">
-                    <i class="bi bi-grid"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('contacts.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-people"></i>
-                    <span>Contacts</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('groups.index') }}" class="sidebar-menu-link active">
-                    <i class="bi bi-folder"></i>
-                    <span>Contact Groups</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('chat.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-chat-dots"></i>
-                    <span>Live Chat</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('wabas.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-whatsapp"></i>
-                    <span>WABAs</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('templates.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>Templates</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('campaigns.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-send"></i>
-                    <span>Campaigns</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('media.index') }}" class="sidebar-menu-link">
-                    <i class="bi bi-image"></i>
-                    <span>Media Library</span>
-                </a>
-            </li>
-        </ul>
-
-        <div class="sidebar-footer">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <div style="background-color: var(--input-focus-shadow); color: var(--primary-color); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                    {{ substr(Auth::user()->name, 0, 1) }}
-                </div>
-                <div>
-                    <h6 class="mb-0" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">{{ Auth::user()->name }}</h6>
-                    <span class="text-muted" style="font-size: 0.75rem;">Tenant Client</span>
-                </div>
-            </div>
-            <button class="btn btn-outline-danger w-100 btn-sm py-2" id="logout-btn" style="border-radius: var(--border-radius-md); font-weight: 600;">
-                Log Out
-            </button>
-        </div>
-    </aside>
+    @include('layouts.sidebar', ['active' => 'groups'])
 
     <!-- Main Workspace -->
     <main class="dashboard-main">
@@ -118,6 +39,14 @@
             </div>
             
             <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('groups.sample') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius: var(--border-radius-md); font-weight: 600;">
+                    <i class="bi bi-download"></i>
+                    <span>Sample Excel</span>
+                </a>
+                <button type="button" class="btn btn-outline-primary d-flex align-items-center gap-2" style="border-radius: var(--border-radius-md); font-weight: 600;" data-bs-toggle="modal" data-bs-target="#importGroupsModal">
+                    <i class="bi bi-upload"></i>
+                    <span>Import Groups</span>
+                </button>
                 <button type="button" class="btn btn-primary-custom d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createGroupModal">
                     <i class="bi bi-folder-plus"></i>
                     <span>Create Group</span>
@@ -207,6 +136,43 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: var(--border-radius-md);">Cancel</button>
                     <button type="submit" class="btn btn-primary btn-primary-custom">Save Group</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Import Groups Modal -->
+<div class="modal fade" id="importGroupsModal" tabindex="-1" aria-labelledby="importGroupsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: var(--card-background); border: 1px solid var(--border-color); border-radius: var(--border-radius-md);">
+            <form id="import-groups-form" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="importGroupsModalLabel">Import Contact Groups from Excel/CSV</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted" style="font-size: 0.85rem;">Need a template? Download sample spreadsheet:</span>
+                        <a href="{{ route('groups.sample') }}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" style="font-weight: 600;">
+                            <i class="bi bi-download"></i> Sample Excel
+                        </a>
+                    </div>
+                    <div class="alert alert-info py-2" style="font-size: 0.82rem;">
+                        <strong>Spreadsheet requirements:</strong><br>
+                        Headers in the first row can include:<br>
+                        <code>group_name, contact_name, mobile_number, email</code><br>
+                        <em>Groups will be created automatically. If contact details are provided, contacts will also be assigned to the group.</em>
+                    </div>
+                    <div class="mb-3">
+                        <label for="groups_file" class="form-label fw-semibold">Select Excel/CSV File</label>
+                        <input type="file" name="file" id="groups_file" class="form-control form-control-custom" accept=".csv,.xlsx,.xls,.txt" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: var(--border-radius-md);">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-primary-custom">Import Groups</button>
                 </div>
             </form>
         </div>
@@ -359,6 +325,47 @@
                 error: function(xhr) {
                     Notiflix.Loading.remove();
                     let msg = 'Failed to create group.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Notiflix.Notify.failure(msg);
+                }
+            });
+        });
+
+        // Form Submit: Import Groups Spreadsheet
+        $('#import-groups-form').on('submit', function(e) {
+            e.preventDefault();
+            Notiflix.Loading.circle('Uploading and parsing groups spreadsheet...');
+
+            const formData = new FormData(this);
+
+            $.ajax({
+                url: "{{ route('groups.import') }}",
+                type: "POST",
+                data: formData,
+                contentType: false,
+                processData: false,
+                dataType: "json",
+                success: function(response) {
+                    Notiflix.Loading.remove();
+                    if (response.status) {
+                        $('#importGroupsModal').modal('hide');
+                        Swal.fire({
+                            title: 'Import Result',
+                            text: response.message,
+                            icon: 'success',
+                            confirmButtonColor: 'var(--primary-color)',
+                            background: 'var(--card-background)',
+                            color: 'var(--text-primary)'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    Notiflix.Loading.remove();
+                    let msg = 'Failed to import groups.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         msg = xhr.responseJSON.message;
                     }
