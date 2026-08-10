@@ -53,8 +53,12 @@ class ProcessCampaigns extends Command
                 continue;
             }
 
-            if (!$group) {
-                // Quick Broadcast Mode: pending contacts are those with pending messages in the database
+            $hasPendingMessages = Message::where('campaign_id', $campaign->id)
+                ->where('status', 'pending')
+                ->exists();
+
+            if (!$group || $hasPendingMessages) {
+                // Pending contacts are those with pending messages in the database
                 $pendingMessages = Message::where('campaign_id', $campaign->id)
                     ->where('status', 'pending')
                     ->with('conversation.contact')
