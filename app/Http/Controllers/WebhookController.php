@@ -109,7 +109,7 @@ class WebhookController extends Controller
             $body = $msgData['interactive']['button_reply']['title'] ?? 
                     $msgData['interactive']['list_reply']['title'] ?? '';
         } elseif (in_array($type, ['image', 'video', 'audio', 'voice', 'document', 'sticker'])) {
-            $messageType = ($type === 'voice') ? 'audio' : (($type === 'sticker') ? 'image' : $type);
+            $messageType = ($type === 'voice') ? 'audio' : $type;
             $mediaData = $msgData[$type] ?? [];
             $body = $mediaData['caption'] ?? $mediaData['filename'] ?? '';
             $mediaMimeType = $mediaData['mime_type'] ?? null;
