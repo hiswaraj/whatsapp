@@ -86,7 +86,7 @@ class WebhookController extends Controller
     }
 
     /**
-     * Parse and process incoming customer text/button messages.
+     * Parse and process incoming customer text/button/media messages.
      */
     protected function processIncomingMessage(array $msgData, array $metadata, array $contactsData = [], ?WhatsappAccount $waba = null): void
     {
@@ -94,14 +94,76 @@ class WebhookController extends Controller
         $msgId = $msgData['id'] ?? null;
         $type = $msgData['type'] ?? 'text';
         $body = '';
+        $messageType = 'text';
+        $mediaPath = null;
+        $mediaMimeType = null;
 
         if ($type === 'text') {
+            $messageType = 'text';
             $body = $msgData['text']['body'] ?? '';
         } elseif ($type === 'button') {
+            $messageType = 'text';
             $body = $msgData['button']['text'] ?? '';
         } elseif ($type === 'interactive') {
+            $messageType = 'text';
             $body = $msgData['interactive']['button_reply']['title'] ?? 
                     $msgData['interactive']['list_reply']['title'] ?? '';
+        } elseif (in_array($type, ['image', 'video', 'audio', 'voice', 'document', 'sticker'])) {
+            $messageType = ($type === 'voice') ? 'audio' : (($type === 'sticker') ? 'image' : $type);
+            $mediaData = $msgData[$type] ?? [];
+            $body = $mediaData['caption'] ?? $mediaData['filename'] ?? '';
+            $mediaMimeType = $mediaData['mime_type'] ?? null;
+            $mediaId = $mediaData['id'] ?? null;
+
+            $phoneNumberId = $metadata['phone_number_id'] ?? null;
+            if (!$waba && $phoneNumberId) {
+                $waba = WhatsappAccount::where('phone_number_id', $phoneNumberId)->first();
+            }
+
+            if ($mediaId && $waba && !empty($waba->meta_access_token) && !str_starts_with($waba->meta_access_token, 'mock_')) {
+                try {
+                    $mediaInfoResponse = \Illuminate\Support\Facades\Http::withToken($waba->meta_access_token)
+                        ->timeout(10)
+                        ->get("https://graph.facebook.com/v19.0/{$mediaId}");
+
+                    if ($mediaInfoResponse->successful()) {
+                        $downloadUrl = $mediaInfoResponse->json('url');
+                        $fetchedMime = $mediaInfoResponse->json('mime_type');
+                        if ($fetchedMime) {
+                            $mediaMimeType = $fetchedMime;
+                        }
+
+                        if ($downloadUrl) {
+                            $fileResponse = \Illuminate\Support\Facades\Http::withToken($waba->meta_access_token)
+                                ->withHeaders(['User-Agent' => 'curl/7.68.0'])
+                                ->timeout(30)
+                                ->get($downloadUrl);
+
+                            if ($fileResponse->successful()) {
+                                $ext = $this->getExtensionFromMime($mediaMimeType, $messageType);
+                                $filename = 'incoming_' . time() . '_' . \Illuminate\Support\Str::random(10) . '.' . $ext;
+                                $dirPath = public_path('uploads/incoming_media');
+                                if (!file_exists($dirPath)) {
+                                    mkdir($dirPath, 0755, true);
+                                }
+                                file_put_contents($dirPath . '/' . $filename, $fileResponse->body());
+                                $mediaPath = 'uploads/incoming_media/' . $filename;
+                            }
+                        }
+                    }
+                } catch (Exception $e) {
+                    Log::error('Error downloading incoming Meta media attachment: ' . $e->getMessage());
+                }
+            }
+        } elseif ($type === 'location') {
+            $messageType = 'text';
+            $loc = $msgData['location'] ?? [];
+            $name = $loc['name'] ?? 'Location';
+            $addr = $loc['address'] ?? (($loc['latitude'] ?? '') . ', ' . ($loc['longitude'] ?? ''));
+            $body = "📍 {$name}: {$addr}";
+        } else {
+            $messageType = 'text';
+            $body = "[Media Attachment: {$type}]";
         }
 
         $phoneNumberId = $metadata['phone_number_id'] ?? null;
@@ -175,8 +237,10 @@ class WebhookController extends Controller
                 'whatsapp_account_id' => $waba->id,
                 'meta_message_id' => $msgId,
                 'type' => 'incoming',
-                'message_type' => 'text',
+                'message_type' => $messageType,
                 'body' => $body,
+                'media_path' => $mediaPath,
+                'media_mime_type' => $mediaMimeType,
                 'status' => 'read'
             ]);
 
@@ -191,6 +255,47 @@ class WebhookController extends Controller
 
         } catch (Exception $e) {
             Log::error('Error processing incoming webhook message: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Map MIME type or media category to extension.
+     */
+    private function getExtensionFromMime(?string $mime, string $type): string
+    {
+        $mimeMap = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+            'video/mp4' => 'mp4',
+            'video/3gpp' => '3gp',
+            'audio/aac' => 'aac',
+            'audio/mp4' => 'm4a',
+            'audio/mpeg' => 'mp3',
+            'audio/ogg' => 'ogg',
+            'audio/opus' => 'ogg',
+            'application/pdf' => 'pdf',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'text/plain' => 'txt',
+        ];
+
+        if ($mime) {
+            $cleanMime = strtolower(explode(';', $mime)[0]);
+            if (isset($mimeMap[$cleanMime])) {
+                return $mimeMap[$cleanMime];
+            }
+        }
+
+        switch ($type) {
+            case 'image': return 'jpg';
+            case 'video': return 'mp4';
+            case 'audio': return 'mp3';
+            case 'document': return 'pdf';
+            default: return 'bin';
         }
     }
 

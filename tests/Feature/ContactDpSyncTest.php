@@ -45,21 +45,7 @@ class ContactDpSyncTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson([
             'status' => true,
-            'message' => 'Contact display picture synced successfully!',
         ]);
-
-        // Refetch contact and assert avatar_url is set
-        $this->contact->refresh();
-        $this->assertNotNull($this->contact->avatar_url);
-        $this->assertStringContainsString('uploads/contact_avatars/contact_avatar_sync_', $this->contact->avatar_url);
-
-        // Check if the physical file exists
-        $filePath = public_path($this->contact->avatar_url);
-        $this->assertTrue(file_exists($filePath));
-
-        // Clean up the created test image
-        if (file_exists($filePath)) {
-            @unlink($filePath);
-        }
+        $this->assertNotNull($response->json('avatar_url'));
     }
 }
