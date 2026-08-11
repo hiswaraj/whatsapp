@@ -855,6 +855,137 @@
         </div>
     </div>
 </div>
+
+<!-- Media Preview Lightbox Modal (WhatsApp-style Popup Viewer) -->
+<div class="modal fade" id="mediaPreviewLightboxModal" tabindex="-1" aria-hidden="true" style="z-index: 2060;">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content" style="background-color: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--border-radius-lg); color: #fff;">
+            <div class="modal-header border-bottom-0 py-2 px-3 d-flex align-items-center justify-content-between" style="border-bottom: 1px solid rgba(255,255,255,0.08) !important;">
+                <h6 class="modal-title fw-semibold text-truncate text-white mb-0" id="lightbox-title" style="max-width: 70%;">Media Preview</h6>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="#" id="lightbox-download-btn" download class="btn btn-sm btn-outline-light d-flex align-items-center gap-1" style="border-radius: var(--border-radius-md); font-weight: 600;">
+                        <i class="bi bi-download"></i> Download
+                    </a>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body text-center p-3 d-flex align-items-center justify-content-center" style="min-height: 380px; max-height: 82vh; overflow: hidden;">
+                <div id="lightbox-content-container" class="w-100 h-100 d-flex align-items-center justify-content-center">
+                    <!-- Dynamic image/video/audio preview injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WhatsApp Image Editor Modal (Doodle, Text, Rotate, Filters, Crop/Flip, Caption) -->
+<div class="modal fade" id="imageEditorModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" style="z-index: 2070;">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content" style="background-color: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: var(--border-radius-lg); color: #fff; overflow: hidden;">
+            <!-- Top Toolbar -->
+            <div class="modal-header border-bottom py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.1) !important;">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="fw-bold text-white fs-6"><i class="bi bi-pencil-square text-success"></i> WhatsApp Image Editor</span>
+                    <div class="vr bg-secondary opacity-50 mx-1 d-none d-sm-block"></div>
+                    
+                    <!-- Tools Toggle -->
+                    <div class="btn-group btn-group-sm" role="group" id="editor-tool-group">
+                        <button type="button" class="btn btn-outline-light active img-tool-btn" data-tool="draw" title="Draw / Doodle">
+                            <i class="bi bi-pencil-fill"></i> Draw
+                        </button>
+                        <button type="button" class="btn btn-outline-light img-tool-btn" data-tool="text" title="Add Text">
+                            <i class="bi bi-type"></i> Text
+                        </button>
+                        <button type="button" class="btn btn-outline-light img-tool-btn" data-tool="emoji" title="Add Sticker">
+                            <i class="bi bi-emoji-smile-fill"></i> Sticker
+                        </button>
+                    </div>
+
+                    <!-- Color Picker -->
+                    <div class="d-flex align-items-center gap-1 ms-1">
+                        <label class="small text-muted mb-0 d-none d-md-inline">Color:</label>
+                        <input type="color" id="editor-color-picker" value="#22c55e" style="width:28px; height:28px; border:1px solid #fff; padding:0; background:transparent; cursor:pointer; border-radius:50%;">
+                    </div>
+
+                    <!-- Brush Size -->
+                    <div class="d-flex align-items-center gap-1 ms-1">
+                        <select id="editor-brush-size" class="form-select form-select-sm bg-dark text-white border-secondary py-0 px-2" style="width: auto; height: 28px; font-size: 0.8rem;">
+                            <option value="3">Thin</option>
+                            <option value="7" selected>Medium</option>
+                            <option value="15">Thick</option>
+                        </select>
+                    </div>
+
+                    <!-- Rotate & Flip -->
+                    <button type="button" class="btn btn-sm btn-outline-light" id="btn-editor-rotate" title="Rotate 90°">
+                        <i class="bi bi-arrow-clockwise"></i> Rotate
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" id="btn-editor-flip" title="Flip Horizontal">
+                        <i class="bi bi-symmetry-vertical"></i> Flip
+                    </button>
+
+                    <!-- Filter Options -->
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="editorFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-magic"></i> Filter
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow" aria-labelledby="editorFilterDropdown">
+                            <li><a class="dropdown-item editor-filter-opt active" data-filter="none" href="#">Normal</a></li>
+                            <li><a class="dropdown-item editor-filter-opt" data-filter="grayscale" href="#">Grayscale</a></li>
+                            <li><a class="dropdown-item editor-filter-opt" data-filter="sepia" href="#">Sepia</a></li>
+                            <li><a class="dropdown-item editor-filter-opt" data-filter="invert" href="#">Invert</a></li>
+                            <li><a class="dropdown-item editor-filter-opt" data-filter="brightness" href="#">Vibrant</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Undo & Reset -->
+                    <button type="button" class="btn btn-sm btn-outline-warning" id="btn-editor-undo" title="Undo Last Stroke">
+                        <i class="bi bi-arrow-counterclockwise"></i> Undo
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="btn-editor-reset" title="Reset Image">
+                        <i class="bi bi-arrow-repeat"></i> Reset
+                    </button>
+                </div>
+                
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Editor Canvas Container -->
+            <div class="modal-body text-center p-3 d-flex align-items-center justify-content-center position-relative" style="min-height: 420px; max-height: 65vh; background: #020617; overflow: auto;">
+                <div class="position-relative d-inline-block" id="editor-canvas-container">
+                    <canvas id="image-editor-canvas" class="rounded" style="max-height: 60vh; max-width: 100%; cursor: crosshair; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: block; margin: 0 auto;"></canvas>
+                </div>
+            </div>
+
+            <!-- Emoji Picker Popup Tray -->
+            <div class="bg-dark border-top border-secondary p-2 d-none" id="editor-emoji-picker-tray" style="background: #1e293b !important;">
+                <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap fs-4">
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">❤️</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">🔥</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">👍</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">😂</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">🎉</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">⭐</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">💯</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">🚀</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">😍</span>
+                    <span class="editor-emoji-item" style="cursor:pointer;" title="Click to stamp">✅</span>
+                </div>
+            </div>
+
+            <!-- Bottom Caption & Send Bar -->
+            <div class="modal-footer border-top p-3 d-flex align-items-center gap-2" style="background: rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.1) !important;">
+                <div class="flex-grow-1 position-relative">
+                    <input type="text" id="editor-caption-input" class="form-control bg-dark text-white border-secondary rounded-pill px-3" placeholder="Add a caption..." style="font-size: 0.95rem;">
+                </div>
+                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-bold d-flex align-items-center gap-2" id="btn-editor-send">
+                    <i class="bi bi-send-fill"></i> Attach & Send
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -950,6 +1081,8 @@
                     const m = conv.last_message;
                     if (m.message_type === 'image') {
                         lastMsgText = '📷 Photo' + (m.body ? `: ${m.body}` : '');
+                    } else if (m.message_type === 'sticker') {
+                        lastMsgText = '🎨 Sticker';
                     } else if (m.message_type === 'video') {
                         lastMsgText = '🎥 Video' + (m.body ? `: ${m.body}` : '');
                     } else if (m.message_type === 'audio') {
@@ -1407,12 +1540,23 @@
                     const mediaUrl = window.location.origin + '/' + msg.media_path;
                     let mediaHtml = '';
                     
-                    const isImg = msg.message_type === 'image' || /\.(jpeg|jpg|gif|png|webp)$/i.test(msg.media_path);
+                    const isSticker = msg.message_type === 'sticker' || (/\.webp$/i.test(msg.media_path) && msg.message_type !== 'image');
+                    const isImg = (msg.message_type === 'image' || /\.(jpeg|jpg|gif|png|webp)$/i.test(msg.media_path)) && !isSticker;
                     const isVid = msg.message_type === 'video' || /\.(mp4|webm|ogg|3gp)$/i.test(msg.media_path);
                     const isAud = msg.message_type === 'audio' || /\.(mp3|wav|ogg|m4a|aac|opus)$/i.test(msg.media_path);
                     
-                    if (isImg) {
-                        mediaHtml = `<div class="mb-1"><img src="${mediaUrl}" class="img-fluid rounded" style="max-height: 220px; cursor: pointer; object-fit: cover; display: block;" onclick="window.open('${mediaUrl}')"></div>`;
+                    if (isSticker) {
+                        const stickerFileName = msg.media_path.split('/').pop() || 'whatsapp_sticker.webp';
+                        mediaHtml = `
+                            <div class="position-relative d-inline-block text-start mb-1">
+                                <img src="${mediaUrl}" class="img-fluid media-preview-trigger" style="max-height: 160px; cursor: pointer; object-fit: contain; display: block;" data-media-url="${mediaUrl}" data-media-type="image" data-media-title="WhatsApp Sticker" title="Click to view sticker">
+                                <a href="${mediaUrl}" download="${stickerFileName}" class="btn btn-sm btn-light border py-1 px-2 mt-1 d-inline-flex align-items-center gap-1 shadow-sm" style="font-size: 0.72rem; border-radius: var(--border-radius-pill); font-weight: 600; text-decoration: none;">
+                                    <i class="bi bi-download text-primary"></i> Download Sticker
+                                </a>
+                            </div>
+                        `;
+                    } else if (isImg) {
+                        mediaHtml = `<div class="mb-1"><img src="${mediaUrl}" class="img-fluid rounded media-preview-trigger" style="max-height: 220px; cursor: pointer; object-fit: cover; display: block; transition: opacity 0.2s ease;" data-media-url="${mediaUrl}" data-media-type="image" data-media-title="${$('<div>').text(msg.body || 'Photo Preview').html()}" title="Click to open popup preview"></div>`;
                     } else if (isVid) {
                         mediaHtml = `<div class="mb-1"><video src="${mediaUrl}" controls class="img-fluid rounded" style="max-height: 220px; max-width: 100%; display: block;"></video></div>`;
                     } else if (isAud) {
@@ -1836,7 +1980,7 @@
 
                             const card = $(`
                                 <div class="col-md-3 col-sm-4 col-6">
-                                    <div class="picker-item-card" data-id="${item.id}" data-type="${item.file_type}" data-filename="${item.filename}">
+                                    <div class="picker-item-card" data-id="${item.id}" data-type="${item.file_type}" data-filename="${item.filename}" data-fileurl="${item.file_url}">
                                         <span class="picker-item-type">${item.file_type}</span>
                                         <div class="picker-item-preview">${previewContent}</div>
                                         <div class="picker-item-info" title="${item.filename}">${item.filename}</div>
@@ -1887,6 +2031,23 @@
             }, 300);
         });
 
+        function attachSelectedMediaToChat() {
+            $('#chat-msg-type').val(pickerSelectedMediaType);
+            $('#chat-media-id').val(pickerSelectedMediaId);
+
+            let iconClass = 'bi-file-earmark-fill';
+            if (pickerSelectedMediaType === 'image') iconClass = 'bi-image-fill';
+            else if (pickerSelectedMediaType === 'video') iconClass = 'bi-film';
+            else if (pickerSelectedMediaType === 'audio') iconClass = 'bi-music-note-beamed';
+
+            $('#preview-file-icon').attr('class', 'bi ' + iconClass);
+            $('#preview-file-name').text(pickerSelectedMediaName);
+            $('#attachment-preview-container').removeClass('d-none');
+            $('.chat-input-field').removeAttr('required');
+
+            $('#mediaPickerModal').modal('hide');
+        }
+
         // Select asset button trigger
         $(document).on('click', '#picker-select-btn', function() {
             if (!pickerSelectedMediaId) return;
@@ -1896,31 +2057,17 @@
                 $('#template-header-media-id').val(pickerSelectedMediaId);
                 $('#template-header-media-btn-text').text(pickerSelectedMediaName);
                 $('#template-header-media-clear').removeClass('d-none');
-
-                // Close modal
                 $('#mediaPickerModal').modal('hide');
+            } else if (pickerSelectedMediaType === 'image') {
+                const selectedCard = $('.picker-item-card.selected');
+                const fileUrl = selectedCard.attr('data-fileurl');
+                if (fileUrl) {
+                    openImageEditorModal(fileUrl, pickerSelectedMediaName);
+                } else {
+                    attachSelectedMediaToChat();
+                }
             } else {
-                // Update chat input form values
-                $('#chat-msg-type').val(pickerSelectedMediaType);
-                $('#chat-media-id').val(pickerSelectedMediaId);
-
-                // Populate the Preview Bar details
-                let iconClass = 'bi-file-earmark-fill';
-                if (pickerSelectedMediaType === 'image') iconClass = 'bi-image-fill';
-                else if (pickerSelectedMediaType === 'video') iconClass = 'bi-film';
-                else if (pickerSelectedMediaType === 'audio') iconClass = 'bi-music-note-beamed';
-
-                $('#preview-file-icon').attr('class', 'bi ' + iconClass);
-                $('#preview-file-name').text(pickerSelectedMediaName);
-
-                // Display attachment preview bar
-                $('#attachment-preview-container').removeClass('d-none');
-                
-                // Remove required attribute from input field
-                $('.chat-input-field').removeAttr('required');
-
-                // Close modal
-                $('#mediaPickerModal').modal('hide');
+                attachSelectedMediaToChat();
             }
         });
 
@@ -2071,6 +2218,315 @@
                 $('.chat-fullscreen-text').text('Full Screen Chat');
                 $('#chat-layout-container').removeClass('is-fullscreen');
             }
+        });
+
+        // Media Preview Lightbox Popup Handler (WhatsApp-style)
+        $(document).on('click', '.media-preview-trigger', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('data-media-url');
+            const type = $(this).attr('data-media-type') || 'image';
+            const title = $(this).attr('data-media-title') || 'Media Preview';
+
+            $('#lightbox-title').text(title);
+            $('#lightbox-download-btn').attr('href', url).attr('download', url.split('/').pop());
+
+            let contentHtml = '';
+            if (type === 'image') {
+                contentHtml = `<img src="${url}" class="img-fluid rounded" style="max-height: 75vh; max-width: 100%; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">`;
+            } else if (type === 'video') {
+                contentHtml = `<video src="${url}" controls autoplay class="w-100 rounded" style="max-height: 75vh; box-shadow: 0 10px 30px rgba(0,0,0,0.6);"></video>`;
+            } else if (type === 'audio') {
+                contentHtml = `<audio src="${url}" controls autoplay class="w-100" style="max-width: 500px;"></audio>`;
+            }
+
+            $('#lightbox-content-container').html(contentHtml);
+            $('#mediaPreviewLightboxModal').modal('show');
+        });
+
+        // --- WhatsApp Image Editor Logic ---
+        let editorCanvas = document.getElementById('image-editor-canvas');
+        let editorCtx = editorCanvas ? editorCanvas.getContext('2d') : null;
+        let editorOriginalImg = new Image();
+        let editorBaseImgUrl = '';
+        let editorRotation = 0;
+        let editorFlipped = false;
+        let editorActiveTool = 'draw';
+        let editorCurrentFilter = 'none';
+        let editorUndoHistory = [];
+        let editorIsDrawing = false;
+        let editorSelectedEmoji = '❤️';
+
+        function openImageEditorModal(imageUrl, filename = 'Image') {
+            editorBaseImgUrl = imageUrl;
+            editorRotation = 0;
+            editorFlipped = false;
+            editorActiveTool = 'draw';
+            editorCurrentFilter = 'none';
+            editorUndoHistory = [];
+            $('#editor-caption-input').val('');
+            $('#editor-tool-group button').removeClass('active');
+            $('#editor-tool-group button[data-tool="draw"]').addClass('active');
+            $('.editor-filter-opt').removeClass('active');
+            $('.editor-filter-opt[data-filter="none"]').addClass('active');
+            $('#editor-emoji-picker-tray').addClass('d-none');
+
+            editorOriginalImg = new Image();
+            editorOriginalImg.crossOrigin = 'Anonymous';
+            editorOriginalImg.onload = function() {
+                let maxW = 900;
+                let maxH = 600;
+                let width = editorOriginalImg.width;
+                let height = editorOriginalImg.height;
+
+                if (width > maxW) {
+                    height = Math.round((height * maxW) / width);
+                    width = maxW;
+                }
+                if (height > maxH) {
+                    width = Math.round((width * maxH) / height);
+                    height = maxH;
+                }
+
+                if (!editorCanvas) {
+                    editorCanvas = document.getElementById('image-editor-canvas');
+                }
+                if (editorCanvas) {
+                    editorCanvas.width = width;
+                    editorCanvas.height = height;
+                    editorCtx = editorCanvas.getContext('2d');
+                }
+
+                redrawEditorCanvas();
+                saveEditorUndoState();
+
+                $('#mediaPickerModal').modal('hide');
+                $('#imageEditorModal').modal('show');
+            };
+            editorOriginalImg.src = imageUrl;
+        }
+
+        function redrawEditorCanvas() {
+            if (!editorCanvas || !editorCtx || !editorOriginalImg.complete) return;
+
+            editorCtx.save();
+            editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+
+            // Apply Filters
+            if (editorCurrentFilter === 'grayscale') editorCtx.filter = 'grayscale(100%)';
+            else if (editorCurrentFilter === 'sepia') editorCtx.filter = 'sepia(100%)';
+            else if (editorCurrentFilter === 'invert') editorCtx.filter = 'invert(100%)';
+            else if (editorCurrentFilter === 'brightness') editorCtx.filter = 'brightness(130%) contrast(110%)';
+            else editorCtx.filter = 'none';
+
+            // Apply Rotation & Flip Transformations
+            editorCtx.translate(editorCanvas.width / 2, editorCanvas.height / 2);
+            editorCtx.rotate((editorRotation * Math.PI) / 180);
+            if (editorFlipped) {
+                editorCtx.scale(-1, 1);
+            }
+
+            let drawW = (editorRotation % 180 === 0) ? editorCanvas.width : editorCanvas.height;
+            let drawH = (editorRotation % 180 === 0) ? editorCanvas.height : editorCanvas.width;
+
+            editorCtx.drawImage(editorOriginalImg, -drawW / 2, -drawH / 2, drawW, drawH);
+            editorCtx.restore();
+        }
+
+        function saveEditorUndoState() {
+            if (!editorCanvas || !editorCtx) return;
+            if (editorUndoHistory.length >= 25) {
+                editorUndoHistory.shift();
+            }
+            editorUndoHistory.push(editorCtx.getImageData(0, 0, editorCanvas.width, editorCanvas.height));
+        }
+
+        function getCanvasCoordinates(e) {
+            const rect = editorCanvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length > 0) {
+                clientX = e.originalEvent.touches[0].clientX;
+                clientY = e.originalEvent.touches[0].clientY;
+            }
+            return {
+                x: (clientX - rect.left) * (editorCanvas.width / rect.width),
+                y: (clientY - rect.top) * (editorCanvas.height / rect.height)
+            };
+        }
+
+        // Canvas Drawing Events
+        $(document).on('mousedown touchstart', '#image-editor-canvas', function(e) {
+            if (!editorCanvas || !editorCtx) return;
+            const pos = getCanvasCoordinates(e);
+            const color = $('#editor-color-picker').val();
+            const size = parseInt($('#editor-brush-size').val()) || 7;
+
+            if (editorActiveTool === 'draw') {
+                saveEditorUndoState();
+                editorIsDrawing = true;
+                editorCtx.beginPath();
+                editorCtx.moveTo(pos.x, pos.y);
+                editorCtx.strokeStyle = color;
+                editorCtx.lineWidth = size;
+                editorCtx.lineCap = 'round';
+                editorCtx.lineJoin = 'round';
+            } else if (editorActiveTool === 'text') {
+                const text = prompt('Enter text to place on image:');
+                if (text && text.trim() !== '') {
+                    saveEditorUndoState();
+                    editorCtx.fillStyle = color;
+                    editorCtx.font = 'bold ' + (size * 2 + 18) + 'px sans-serif';
+                    editorCtx.textBaseline = 'middle';
+                    editorCtx.fillText(text, pos.x, pos.y);
+                }
+            } else if (editorActiveTool === 'emoji') {
+                if (editorSelectedEmoji) {
+                    saveEditorUndoState();
+                    editorCtx.font = (size * 2 + 28) + 'px sans-serif';
+                    editorCtx.textBaseline = 'middle';
+                    editorCtx.fillText(editorSelectedEmoji, pos.x, pos.y);
+                }
+            }
+        });
+
+        $(document).on('mousemove touchmove', '#image-editor-canvas', function(e) {
+            if (!editorIsDrawing || editorActiveTool !== 'draw' || !editorCtx) return;
+            e.preventDefault();
+            const pos = getCanvasCoordinates(e);
+            editorCtx.lineTo(pos.x, pos.y);
+            editorCtx.stroke();
+        });
+
+        $(document).on('mouseup mouseleave touchend', '#image-editor-canvas', function() {
+            editorIsDrawing = false;
+        });
+
+        // Tool Selector Buttons
+        $(document).on('click', '.img-tool-btn', function() {
+            $('.img-tool-btn').removeClass('active');
+            $(this).addClass('active');
+            editorActiveTool = $(this).attr('data-tool');
+            if (editorActiveTool === 'emoji') {
+                $('#editor-emoji-picker-tray').removeClass('d-none');
+            } else {
+                $('#editor-emoji-picker-tray').addClass('d-none');
+            }
+        });
+
+        // Emoji Item Click
+        $(document).on('click', '.editor-emoji-item', function() {
+            editorSelectedEmoji = $(this).text();
+            Notiflix.Notify.info('Selected emoji: ' + editorSelectedEmoji + '. Click canvas to place.');
+        });
+
+        // Rotate & Flip Handlers
+        $(document).on('click', '#btn-editor-rotate', function() {
+            saveEditorUndoState();
+            editorRotation = (editorRotation + 90) % 360;
+            redrawEditorCanvas();
+        });
+
+        $(document).on('click', '#btn-editor-flip', function() {
+            saveEditorUndoState();
+            editorFlipped = !editorFlipped;
+            redrawEditorCanvas();
+        });
+
+        // Filter Handlers
+        $(document).on('click', '.editor-filter-opt', function(e) {
+            e.preventDefault();
+            $('.editor-filter-opt').removeClass('active');
+            $(this).addClass('active');
+            saveEditorUndoState();
+            editorCurrentFilter = $(this).attr('data-filter');
+            redrawEditorCanvas();
+        });
+
+        // Undo & Reset Handlers
+        $(document).on('click', '#btn-editor-undo', function() {
+            if (editorUndoHistory.length > 1) {
+                editorUndoHistory.pop();
+                const lastState = editorUndoHistory[editorUndoHistory.length - 1];
+                editorCtx.putImageData(lastState, 0, 0);
+            } else if (editorUndoHistory.length === 1) {
+                redrawEditorCanvas();
+            }
+        });
+
+        $(document).on('click', '#btn-editor-reset', function() {
+            editorRotation = 0;
+            editorFlipped = false;
+            editorCurrentFilter = 'none';
+            editorUndoHistory = [];
+            redrawEditorCanvas();
+            saveEditorUndoState();
+        });
+
+        // Export & Send Edited Image
+        $(document).on('click', '#btn-editor-send', function() {
+            if (!editorCanvas) return;
+
+            const btn = $(this);
+            btn.prop('disabled', true);
+            Notiflix.Loading.circle('Exporting & uploading edited image...');
+
+            editorCanvas.toBlob(function(blob) {
+                if (!blob) {
+                    Notiflix.Loading.remove();
+                    btn.prop('disabled', false);
+                    Notiflix.Notify.failure('Failed to export image canvas.');
+                    return;
+                }
+
+                const formData = new FormData();
+                const fileName = 'edited_' + Date.now() + '.png';
+                formData.append('file', blob, fileName);
+                formData.append('_token', "{{ csrf_token() }}");
+
+                $.ajax({
+                    url: "{{ route('media.store') }}",
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        Notiflix.Loading.remove();
+                        btn.prop('disabled', false);
+
+                        if (response.status && response.media) {
+                            $('#chat-msg-type').val('image');
+                            $('#chat-media-id').val(response.media.id);
+
+                            const caption = $('#editor-caption-input').val().trim();
+                            if (caption) {
+                                $('.chat-input-field').val(caption);
+                            }
+
+                            $('#preview-file-icon').attr('class', 'bi bi-image-fill');
+                            $('#preview-file-name').text(response.media.filename || fileName);
+                            $('#attachment-preview-container').removeClass('d-none');
+                            $('.chat-input-field').removeAttr('required');
+
+                            $('#imageEditorModal').modal('hide');
+                            $('#mediaPickerModal').modal('hide');
+
+                            setTimeout(function() {
+                                $('#send-chat-msg-form').submit();
+                            }, 300);
+                        } else {
+                            Notiflix.Notify.failure(response.message || 'Failed to upload edited image.');
+                        }
+                    },
+                    error: function() {
+                        Notiflix.Loading.remove();
+                        btn.prop('disabled', false);
+                        Notiflix.Notify.failure('Upload error occurred.');
+                    }
+                });
+            }, 'image/png');
         });
 
         // AJAX Logout handler
