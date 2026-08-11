@@ -947,7 +947,18 @@
                 
                 let lastMsgText = 'No messages yet';
                 if (conv.last_message) {
-                    lastMsgText = conv.last_message.body || '[Media/Attachment]';
+                    const m = conv.last_message;
+                    if (m.message_type === 'image') {
+                        lastMsgText = '📷 Photo' + (m.body ? `: ${m.body}` : '');
+                    } else if (m.message_type === 'video') {
+                        lastMsgText = '🎥 Video' + (m.body ? `: ${m.body}` : '');
+                    } else if (m.message_type === 'audio') {
+                        lastMsgText = '🎵 Audio message';
+                    } else if (m.message_type === 'document') {
+                        lastMsgText = '📄 Document' + (m.body ? `: ${m.body}` : '');
+                    } else {
+                        lastMsgText = m.body || '[Media Attachment]';
+                    }
                 }
 
                 let timeStr = '';
@@ -1396,21 +1407,21 @@
                     const mediaUrl = window.location.origin + '/' + msg.media_path;
                     let mediaHtml = '';
                     
-                    const isImg = /\.(jpeg|jpg|gif|png|webp)$/i.test(msg.media_path);
-                    const isVid = /\.(mp4|webm|ogg)$/i.test(msg.media_path);
-                    const isAud = /\.(mp3|wav|ogg)$/i.test(msg.media_path);
+                    const isImg = msg.message_type === 'image' || /\.(jpeg|jpg|gif|png|webp)$/i.test(msg.media_path);
+                    const isVid = msg.message_type === 'video' || /\.(mp4|webm|ogg|3gp)$/i.test(msg.media_path);
+                    const isAud = msg.message_type === 'audio' || /\.(mp3|wav|ogg|m4a|aac|opus)$/i.test(msg.media_path);
                     
-                    if (msg.message_type === 'image' || isImg) {
-                        mediaHtml = `<div class="mb-1"><img src="${mediaUrl}" class="img-fluid rounded" style="max-height: 200px; cursor: pointer; object-fit: cover; display: block;" onclick="window.open('${mediaUrl}')"></div>`;
-                    } else if (msg.message_type === 'video' || isVid) {
-                        mediaHtml = `<div class="mb-1"><video src="${mediaUrl}" controls class="img-fluid rounded" style="max-height: 200px; max-width: 100%; display: block;"></video></div>`;
-                    } else if (msg.message_type === 'audio' || isAud) {
+                    if (isImg) {
+                        mediaHtml = `<div class="mb-1"><img src="${mediaUrl}" class="img-fluid rounded" style="max-height: 220px; cursor: pointer; object-fit: cover; display: block;" onclick="window.open('${mediaUrl}')"></div>`;
+                    } else if (isVid) {
+                        mediaHtml = `<div class="mb-1"><video src="${mediaUrl}" controls class="img-fluid rounded" style="max-height: 220px; max-width: 100%; display: block;"></video></div>`;
+                    } else if (isAud) {
                         mediaHtml = `<div class="mb-1"><audio src="${mediaUrl}" controls style="max-width: 100%; display: block;"></audio></div>`;
                     } else {
                         const filename = msg.body || 'Attached Document';
                         const docName = msg.message_type === 'template' ? msg.media_path.split('/').pop() : filename;
                         mediaHtml = `
-                            <a href="${mediaUrl}" download="${docName}" class="d-flex align-items-center gap-2 p-2 rounded text-decoration-none mb-1" style="background-color: var(--background-color); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); min-width: 180px; display: inline-flex;">
+                            <a href="${mediaUrl}" download="${docName}" target="_blank" class="d-flex align-items-center gap-2 p-2 rounded text-decoration-none mb-1" style="background-color: var(--background-color); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); min-width: 180px; display: inline-flex;">
                                 <i class="bi bi-file-earmark-arrow-down-fill text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="overflow-hidden" style="text-align: left;">
                                     <div class="text-truncate small fw-semibold text-primary" style="max-width: 180px;">${$('<div>').text(docName).html()}</div>
@@ -1421,13 +1432,39 @@
                     }
                     
                     messageBody = mediaHtml;
-                    if (msg.body) {
+                    if (msg.body && !isImg && !isVid && !isAud) {
                         let textBody = $('<div>').text(msg.body).html().replace(/\n/g, '<br>');
                         messageBody += `<div class="mt-2 text-wrap">${textBody}</div>`;
+                    } else if (msg.body && (isImg || isVid || isAud)) {
+                        let textBody = $('<div>').text(msg.body).html().replace(/\n/g, '<br>');
+                        messageBody += `<div class="mt-1 small text-wrap">${textBody}</div>`;
+                    }
+                } else if (['image', 'video', 'audio', 'document'].includes(msg.message_type)) {
+                    let iconClass = 'bi-file-earmark-fill';
+                    let label = 'Media Attachment';
+                    if (msg.message_type === 'image') { iconClass = 'bi-image'; label = 'Image Attachment'; }
+                    else if (msg.message_type === 'video') { iconClass = 'bi-camera-reels'; label = 'Video Attachment'; }
+                    else if (msg.message_type === 'audio') { iconClass = 'bi-file-music'; label = 'Audio Message'; }
+                    else if (msg.message_type === 'document') { iconClass = 'bi-file-earmark-text'; label = 'Document Attachment'; }
+
+                    let mediaHtml = `
+                        <div class="d-flex align-items-center gap-2 p-2 rounded mb-1" style="background-color: rgba(0,0,0,0.05); border: 1px dashed var(--border-color);">
+                            <i class="bi ${iconClass} text-primary" style="font-size: 1.2rem;"></i>
+                            <span class="small fw-semibold text-secondary">${label}</span>
+                        </div>
+                    `;
+                    messageBody = mediaHtml;
+                    if (msg.body) {
+                        let textBody = $('<div>').text(msg.body).html().replace(/\n/g, '<br>');
+                        messageBody += `<div class="mt-1 text-wrap">${textBody}</div>`;
                     }
                 } else {
-                    messageBody = $('<div>').text(msg.body || '').html();
-                    messageBody = messageBody.replace(/\n/g, '<br>');
+                    const rawContent = msg.body || '';
+                    if (rawContent.trim() === '') {
+                        messageBody = '<span class="text-muted fst-italic small">[Empty Message]</span>';
+                    } else {
+                        messageBody = $('<div>').text(rawContent).html().replace(/\n/g, '<br>');
+                    }
                 }
 
                 htmlArr.push(`
