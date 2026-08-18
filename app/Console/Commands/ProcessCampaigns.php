@@ -11,6 +11,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
+use Illuminate\Support\Facades\Cache;
+
 #[Signature('campaigns:process')]
 #[Description('Process scheduled and active WhatsApp template broadcast campaigns.')]
 class ProcessCampaigns extends Command
@@ -19,6 +21,22 @@ class ProcessCampaigns extends Command
      * Execute the console command.
      */
     public function handle()
+    {
+        $lock = Cache::lock('campaigns_process_command_lock', 120);
+
+        if (!$lock->get()) {
+            $this->info("Another campaigns:process instance is currently running. Skipping duplicate execution.");
+            return Command::SUCCESS;
+        }
+
+        try {
+            return $this->processCampaigns();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function processCampaigns()
     {
         $now = now();
 

@@ -232,6 +232,16 @@ class CampaignController extends Controller
                 ], 422);
             }
 
+            if ($campaign->status === 'completed') {
+                $hasPending = Message::where('campaign_id', $campaign->id)->where('status', 'pending')->exists();
+                if (!$hasPending) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Campaign is already completed and has no pending messages to dispatch.'
+                    ], 422);
+                }
+            }
+
             if ($campaign->status !== 'processing') {
                 $campaign->update(['status' => 'processing']);
             }

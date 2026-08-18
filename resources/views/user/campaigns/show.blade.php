@@ -41,11 +41,12 @@
         <!-- Dynamic Sending Progress Bar -->
         <section class="card border p-3 mb-4 fade-in-element" style="border-radius: var(--border-radius-md); background-color: var(--card-background); border-color: var(--border-color) !important; animation-delay: 0.05s;">
             @php
-                $pct = $campaign->total_contacts > 0 ? round(($campaign->sent_count + $campaign->failed_count) / $campaign->total_contacts * 100) : 0;
+                $dispatched = $campaign->sent_count + $campaign->failed_count;
+                $pct = $campaign->total_contacts > 0 ? min(100, round($dispatched / $campaign->total_contacts * 100)) : 0;
             @endphp
             <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 0.85rem;">
                 <span class="fw-bold" style="color: var(--text-primary);">Total Broadcast Progress</span>
-                <span class="fw-bold text-primary" id="progress-text">{{ $campaign->sent_count + $campaign->failed_count }} / {{ $campaign->total_contacts }} ({{ $pct }}%)</span>
+                <span class="fw-bold text-primary" id="progress-text">{{ min($dispatched, $campaign->total_contacts) }} / {{ $campaign->total_contacts }} ({{ $pct }}%)</span>
             </div>
             <div class="progress" style="height: 8px; border-radius: var(--border-radius-pill);">
                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="progress-bar-el" role="progressbar" style="width: {{ $pct }}%;" aria-valuenow="{{ $pct }}" aria-valuemin="0" aria-valuemax="100"></div>
@@ -436,9 +437,10 @@
 
                         // Update progress bar
                         const totalDispatched = camp.sent_count + camp.failed_count;
-                        const pct = camp.total_contacts > 0 ? Math.round(totalDispatched / camp.total_contacts * 100) : 0;
+                        const pct = camp.total_contacts > 0 ? Math.min(100, Math.round(totalDispatched / camp.total_contacts * 100)) : 0;
+                        const displayDispatched = Math.min(totalDispatched, camp.total_contacts);
                         
-                        $('#progress-text').text(`${totalDispatched} / ${camp.total_contacts} (${pct}%)`);
+                        $('#progress-text').text(`${displayDispatched} / ${camp.total_contacts} (${pct}%)`);
                         $('#progress-bar-el').width(`${pct}%`).attr('aria-valuenow', pct);
 
                         // Update calculations
